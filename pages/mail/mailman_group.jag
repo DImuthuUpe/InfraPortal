@@ -1,0 +1,136 @@
+
+<%var config = require('../../config.json');%>
+<div id="workArea">
+
+	<div id="middle">
+		<h2>Mailman Mailing List Management</h2>
+
+		<br />
+
+		<p>The Mailman Mailing List Browser allows you to browse,add,remove groups in
+			Mailman.</p>
+	</div>
+	<br />
+	<div>
+		<table width="100%">
+			<tr>
+				<td class="middle-comp">
+					<div>
+						<h4>Search Mailing List</h4>
+						<input type="text" id="jgrpsearchtxt" /> <input id="jgrpsearchbtn"
+							value="Search" type="submit">
+					</div>
+				</td>
+
+			</tr>
+		</table>
+	</div>
+
+	<br />
+	<%var url  = config.services.mailman;
+			var data = {
+			"application": "mailman","operation": "getLists","content":{}
+			};
+			var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			var resp = parse(ldapJson.data).entries;
+			%>
+	<table class="styledLeft">
+		<thead>
+			<tr>
+				<th>Group Name</th>
+				<th>Users</th>
+				<th>Operations</th>
+			</tr>
+		</thead>
+		<tbody>
+			<%if(resp instanceof Array){
+				for(var i=0;i<resp.length;i++){
+				
+			%>
+			<tr height="30px">
+				<td><%print(resp[i].fqdn_listname);%></td>
+				<td><%
+				data = {
+					"application": "mailman","operation": "getListMembers","content":{"fqdn_listname":resp[i].fqdn_listname}
+				};
+				    var ldapJson = post(url, stringify(data) ,optionalHeaders);
+					var respUsr2 = JSON.parse(ldapJson.data);					
+					var respUsr = JSON.parse(ldapJson.data).entries;
+					
+				if(respUsr instanceof Array){
+					print(respUsr2.total_size);
+				}else{
+					print("0");
+				}
+				%>
+				
+				
+				</td>
+				<td>
+					<ul class="operation-list">
+						<li><a href="../../pages/mail/delete_group_confirm.jag?groupId=<%print(resp[i].fqdn_listname);%>"> <img
+								src="../../images/icons/bullet_cross.png"> Delete
+						</a></li>
+						<li><a href="../../pages/mail/user_list.jag?groupId=<%print(resp[i].fqdn_listname);%>" ><img
+								src="../../images/icons/bullet_plus.png">Add/Remove Users</a>
+						</li>
+						
+					</ul>
+				</td>
+			</tr>
+			<%
+				}
+			}else if(resp != null){
+				
+			%>
+			<tr height="30px">
+				<td><%print(resp.fqdn_listname);%></td>
+				<td><%
+				data = {
+					"application": "mailman","operation": "getListMembers","content":{"fqdn_listname":resp.fqdn_listname}
+				};
+				var ldapJson = post(url, stringify(data) ,optionalHeaders);
+				var respUsr2 = JSON.parse(ldapJson.data);					
+				var respUsr = JSON.parse(ldapJson.data).entries;
+				if(respUsr instanceof Array){
+					print(respUsr2.total_size);
+				}else{
+					print("0");
+				}
+				%>
+				
+				
+				</td>
+				<td>
+					<ul class="operation-list">
+						<li><a href="../../pages/mail/delete_group_confirm.jag?groupId=<%print(resp.fqdn_listname);%>" > <img
+								src="../../images/icons/bullet_cross.png"> Delete
+						</a></li>
+						<li><a href="../../pages/mail/user_list.jag?groupId=<%print(resp.fqdn_listname);%>" ><img
+								src="../../images/icons/bullet_plus.png">Add/Remove Users</a>
+						</li>
+						
+					</ul>
+				</td>
+			</tr>
+			<%
+			}
+			
+			%>
+
+		</tbody>
+	</table>
+
+	<table>
+
+
+	</table>
+
+
+
+
+</div>
+
+

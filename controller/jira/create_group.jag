@@ -1,0 +1,61 @@
+<%
+var baseAt="../..";
+
+include("../../includes/header.jag");
+include('../../controller/jira/controller.jag');
+include('../../controller/common.jag');
+var showpage=true;
+
+var log=new Log();
+var groupname =request.getParameter("groupName");
+var addList=JSON.parse(request.getParameter("addList"));
+var deleteList=JSON.parse(request.getParameter("deleteList"));
+
+
+try {
+
+	var success=createGroup(groupname);
+
+}catch (e){
+	showErrorDialog(e.title,e.details);
+	showpage=false;
+}
+
+if (showpage) {
+	
+	if (success.code){
+		if(addList!=null){
+			log.info("Editing permission of group : "+groupname);
+			log.info("Adding permissions: "+ stringify(addList));
+			addGroupsToRoles(groupname,addList);
+		}
+		
+		
+		log.info("Deleting permissions :" + stringify(deleteList));
+		if(deleteList!=null){
+			log.info("Editing permission of group : "+groupname);
+			log.info("Removing permissions: "+ stringify(deleteList));
+			deleteGroupsFromRoles(groupname,deleteList);
+		}
+		%>
+			<script type="text/javascript">
+				alert("Successfully created group '<%print(groupname);%>'");
+				window.location.replace("../../pages/jira/edit_group.jag?groupname=<%print(groupname);%>");
+			</script>
+		<%
+	}else{
+		%>
+			<script type="text/javascript">
+				alert("Failed to create the group '<%print(groupname);%>'. An internal error has occured.\n\nDetails:\n " + <%print(parse(success.error).errorMessages);%>);
+				window.location.replace("../../pages/home.jag");
+			</script>
+		<%
+	}
+
+}
+
+%>
+
+<%
+include("../../includes/footer.jag");
+%>

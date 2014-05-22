@@ -1,0 +1,172 @@
+<%
+var baseAt="../..";
+
+var user = session.get("user");
+if(user==null){
+	response.sendRedirect("../../login.jag");
+}else{
+	
+	include('../../includes/header.jag');
+	var config = require('../../config.json');
+	include('../../controller/jira/controller.jag');
+	%>
+<%
+var url  = config.services.svn;
+var data = {
+	"application": "svn","operation": "getUserGroupList","content":{
+	"mail":user.mail}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+
+	//////////////svn//////////
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	//print(ldapJson);
+	var resp = parse(ldapJson.data).getUserGroupListResponse.return;
+	var svnUserGroups =[];
+	if(resp!=null){
+		if(resp instanceof Array){
+			svnUserGroups = resp;
+
+		}else if(resp["@nil"]==null){
+			svnUserGroups.push(resp);
+		}
+	}
+	////////////jira///////////
+
+	var jiraUserGroupsTemp = getUserGroups(user.mail);
+	var jiraUserGroups=[];
+	for(var i=0;i<jiraUserGroupsTemp.length;i++){
+		jiraUserGroups.push(jiraUserGroupsTemp[i].name);
+	}
+
+	////////////mailman/////////////
+	url  = config.services.mailman;
+	data = {
+		"application": "mailman","operation":"getMemberSubsciptions","content":{
+		"subscriber":user.mail}
+	};
+	ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var parsed = JSON.parse(ldapJson.data);
+	var entries =parsed.entries;
+
+	var mailUserGroups=[];
+
+	if(entries!=null){
+		for(var i=0;i<entries.length;i++){
+			mailUserGroups.push(entries[i].list_id);
+		}
+	}
+
+
+	//////////Docs/////////////////////////
+	url  = config.services.docs;
+	data = {
+		"application": "docs","operation":"getUserGroups","content":{
+		"username":user.mail}
+	};
+	ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var entries = parse(ldapJson.data).getUserGroupsResponse.getUserGroupsReturn.getUserGroupsReturn;
+	var docsUserGroups=[];
+
+	if(entries!=null){
+		if(entries instanceof Array){
+			for(var i=0;i<entries.length;i++){
+				docsUserGroups.push(entries[i]["$"]);
+			}
+		}else{
+			docsUserGroups.push(entries["$"]);
+		}
+	}
+
+	//print(docsUserGroups);
+	%>
+<h2>View permissions</h2>
+<div id="lightbox"></div>
+<div
+	id="lightbox-shadow" onclick="closeLightbox()"></div>
+
+
+<div id="workArea">
+	<br />
+	<hr />
+	<table>
+		<tr>
+			<td style="width: 200px"><h3>Jira Permissions</h3></td>
+		</tr>
+
+	</table>
+	<br />
+	<table id="jiraTable">
+		<%for(var i=0;i<jiraUserGroups.length;i++){ %>
+		<tr>
+			<td><%print(jiraUserGroups[i]);%></td>
+		</tr>
+		<%}
+		%>
+
+	</table>
+	<br />
+
+	<hr />
+	<table>
+		<tr>
+			<td style="width: 200px"><h3>Docs Permissions</h3></td>
+		</tr>
+
+	</table>
+	<br />
+	<table id="docsTable">
+		<%for(var i=0;i<docsUserGroups.length;i++){ %>
+		<tr>
+			<td><%print(docsUserGroups[i]);%></td>
+		</tr>
+		<%}
+		%>
+
+	</table>
+	<br />
+
+	<hr />
+	<table>
+		<tr>
+			<td style="width: 200px"><h3>SVN Permissions</h3></td>
+		</tr>
+
+	</table>
+	<br />
+	<table id="svnTable">
+		<%for(var i=0;i<svnUserGroups.length;i++){ %>
+		<tr>
+			<td><%print(svnUserGroups[i]);%></td>
+		</tr>
+		<%}
+		%>
+
+	</table>
+	<br />
+
+	<hr />
+	<table>
+		<tr>
+			<td style="width: 200px"><h3>Mailman Permissions</h3></td>
+		</tr>
+
+	</table>
+	<br />
+	<table id="mailTable">
+		<%for(var i=0;i<mailUserGroups.length;i++){ %>
+		<tr>
+			<td><%print(mailUserGroups[i]);%></td>
+		</tr>
+		<%}
+		%>
+
+	</table>
+	<br />
+
+</div>
+<%
+include('../../includes/footer.jag');
+}
+%>

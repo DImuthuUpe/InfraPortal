@@ -1,0 +1,37 @@
+<%
+	var config = require('../../config.json');
+	var roleList =  request.getParameter("roleList");
+	var groupName =  request.getParameter("groupName");
+	if(groupName!=null&&groupName!=""){
+	roleList = JSON.parse(roleList);
+	
+	var url  = config.services.svn;
+	var data = {
+		"application": "svn","operation": "createGroup","content":{
+		"groupId":groupName}
+	};
+	var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var result = parse(ldapJson.data).createGroupResponse.return;
+	
+	if(result=="Success"){
+		for(key in roleList){
+			data = {
+					"application": "svn","operation": "addGroupToProject","content":{
+					"groupId":groupName,"projectPath":roleList[key][0],"priviledge":roleList[key][1]}
+			};
+			print(data);
+			ldapJson = post(url, stringify(data) ,optionalHeaders);
+			print(ldapJson);
+		}
+	}
+	response.sendRedirect("../../pages/group_management/group_list.jag#tabs|Product:svn");
+}else{
+	%>
+	<script type="text/javascript">
+		alert("Group name can not be empty");
+		window.location.replace("../../pages/home.jag");
+	</script>
+	<%
+}
+	%>

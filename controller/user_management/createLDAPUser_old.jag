@@ -1,0 +1,212 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+var config = require('../../config.json');
+
+
+var uid = request.getParameter("uid");
+var password = request.getParameter("password");
+var mail = request.getParameter("mail");
+var givenName = request.getParameter("givenName");
+var displayName = request.getParameter("displayName");
+var mobile = request.getParameter("mobile");
+var sn = request.getParameter("sn");
+var cn = request.getParameter("cn");
+var roles = request.getParameter("roles");
+
+var chkJira = request.getParameter("chkJira");
+var chkDocs = request.getParameter("chkDocs");
+var chkSvn = request.getParameter("chkSvn");
+var chkMailman = request.getParameter("chkMailman");
+
+var svnList = request.getParameter("svnList");
+var mailList = request.getParameter("mailList");
+var jiraList = request.getParameter("jiraList");
+var docsList = request.getParameter("docsList");
+
+var inetOrgPerson = request.getParameter("inetOrgPerson");
+var organizationalPerson = request.getParameter("organizationalPerson");
+var person = request.getParameter("person");
+var top = request.getParameter("top");
+
+var objectClass = "inetOrgPerson";
+if(organizationalPerson=="on"){
+	objectClass+=",organizationalPerson";
+}
+if(person=="on"){
+	objectClass+=",person";
+}
+if(top=="on"){
+	objectClass+=",top";
+}
+
+
+var url  = config.services.ldap;
+var data = {
+	"application": "ldap","operation": "createEntity","content":{
+	"objectClass": objectClass,
+	"dn":"uid="+uid+",ou=staff,dc=wso2,dc=com",
+	"attributes":"mail="+mail+",userPassword="+password+",sn="+sn+",cn="+cn}
+};
+
+if(givenName!=""){
+	data["content"]["attributes"]+=",givenName="+givenName;
+}
+if(displayName!=""){
+	data["content"]["attributes"]+=",displayName="+displayName;
+}
+if(mobile!=""){
+	data["content"]["attributes"]+=",homePhone="+mobile;
+}
+//print(data)
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var entries = parse(ldapJson.data);
+	if(entries.result.message=="Success"){
+		print("User created successfully<br>");
+
+
+		var roleList=roles.split(",");
+		if(roleList instanceof Array&&entries.result.message=="Success"){
+			//print("Array");
+			for(var i=0;i<roleList.length;i++){
+					
+				data = {
+					"application": "ldap","operation": "updateEntity","content":{
+					"mode":"add",
+					"dn":"cn="+roleList[i]+",ou=groups,dc=wso2,dc=com",
+					"attributes":"member:uid="+uid+",ou=staff,dc=wso2,dc=com"}
+				};
+
+				ldapJson = post(url, stringify(data) ,optionalHeaders);
+
+				print("<br>Roles Created Successfully<br/><br/><hr/>");
+			}
+		}
+
+		//print(chkJira);
+		if(chkJira=="on"){
+			//print(jiraList);
+			jiraList = JSON.parse(jiraList);
+			url  = config.services.jira;
+			data ={
+				"application":"jira","operation":"login","content":{
+				"username":mail,"password":password}
+			};
+			ldapJson = post(url, stringify(data) ,optionalHeaders);
+			print("Jira user created <br>")
+
+			for(key in jiraList){
+				if(jiraList[key]){
+					data={
+						"application":"jira","operation":"addUserToGroup","content":{
+						"groupname":key,"username":mail}
+					};
+					var resStr = post(url, stringify(data) ,optionalHeaders);
+					print("User added to jira group "+key+"<br/>");
+				}
+			}
+			print("<hr/>")
+
+		}
+
+		if(chkMailman=="on"){
+			//print(mailList);
+			mailList = JSON.parse(mailList);
+			url  = config.services.mailman;
+			data ={
+				"application":"mailman","operation":"createUser","content":{
+				"email":mail,"password":password,"display_name":displayName}
+			};
+			var resStr = post(url, stringify(data) ,optionalHeaders);
+			print("<br/>");
+			//print(resStr);
+			print("</br>Mailman user created <br>");
+			for(key in mailList){
+				if(mailList[key]){
+					var data = {
+						"application": "mailman","operation": "joinMailList","content":{
+						"list_id":key.replace("@","."),"subscriber":mail,"delivery_mode":"regular"}
+					};
+					resStr = post(url, stringify(data) ,optionalHeaders);
+					//print("<br>");
+					//print(resStr);
+					//print("<br>")
+					if(resStr.data==null){
+						print("User added to mail List "+key+"<br/>");
+					}
+
+				}
+			}
+			print("<hr/>")
+
+		}
+
+		if(chkSvn=="on"){
+			//print(svnList);
+			svnList = JSON.parse(svnList);
+			url  = config.services.svn;
+
+			print("<br/>");
+			//print(resStr);
+			print("</br>SVN user created <br>");
+			for(key in svnList){
+				if(svnList[key]){
+					var data = {
+						"application": "svn","operation": "addUserToGroup","content":{
+						"groupId":key,"mail":mail}
+					};
+					var resStr = post(url, stringify(data) ,optionalHeaders);
+					//print("<br>");
+					//print(resStr);
+					//print("<br>")
+					//if(data.data==null){
+					print("User added to svn group "+key+"<br/>");
+					//}
+
+				}
+			}
+			print("<hr/>")
+
+
+		}
+		java.lang.Thread.sleep(1000);
+		if(chkDocs=="on"){
+			docsList = JSON.parse(docsList);
+			url  = config.services.docs;
+			data = {
+				"application":"docs","operation":"login","content":{
+					"username":mail,"password":password}
+			};
+			var resStr = post(url, stringify(data) ,optionalHeaders);
+			print("Docs user created <br>");
+			for(key in docsList){
+				if(docsList[key]){
+					var data = {
+						"application": "docs","operation": "addUserToGroup","content":{
+						"groupId":key,"mail":mail}
+					};
+					resStr = post(url, stringify(data) ,optionalHeaders);
+					print("<br>");
+					print(resStr);
+					print("<br>")
+					//if(data.data==null){
+					print("User added to Docs group "+key+"<br/>");
+					//}
+						
+					}
+				}
+					
+			}
+
+
+
+
+		}else{
+			print("Error at user creation : "+entries.result.message);
+		}
+
+		include('../../includes/footer.jag');
+		%>

@@ -1,0 +1,137 @@
+
+<%var config = require('../../config.json');%>
+<div id="workArea">
+
+	<div id="middle">
+		<h2>SVN Groups Management</h2>
+
+		<br />
+
+		<p>The SVN Group Browser allows you to browse,add,remove groups in
+			SVN.</p>
+	</div>
+	<br />
+	<div>
+		<table width="100%">
+			<tr>
+				<td class="middle-comp">
+					<div>
+						<h4>Search Group</h4>
+						<input type="text" id="jgrpsearchtxt" /> <input id="jgrpsearchbtn"
+							value="Search" type="submit">
+					</div>
+				</td>
+
+			</tr>
+		</table>
+	</div>
+
+	<br />
+	<%var url  = config.services.svn;
+			var data = {
+			"application": "svn","operation": "getGroupList","content":{}
+			};
+			var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			var resp = parse(ldapJson.data).getGroupListResponse.return;
+			%>
+	<table class="styledLeft">
+		<thead>
+			<tr>
+				<th>Group Name</th>
+				<th>Users</th>
+				<th>Operations</th>
+			</tr>
+		</thead>
+		<tbody>
+			<%if(resp instanceof Array){
+				for(var i=0;i<resp.length;i++){
+				
+			%>
+			<tr height="30px">
+				<td><%print(resp[i]);%></td>
+				<td><%
+				data = {
+					"application": "svn","operation": "getUserList","content":{"groupId":resp[i]}
+				};
+				var ldapJson = post(url, stringify(data) ,optionalHeaders);
+				var respUsr = parse(ldapJson.data).getUserListResponse.return;
+				if(respUsr instanceof Array){
+					print(respUsr.length);
+				}else{
+					print("0");
+				}
+				%>
+				
+				
+				</td>
+				<td>
+					<ul class="operation-list">
+						<li><a href="./delete_group_confirm.jag?groupId=<%print(resp[i]);%>"> <img
+								src="../../images/icons/bullet_cross.png"> Delete
+						</a></li>
+						<li><a href="./user_list.jag?groupId=<%print(resp[i]);%>" ><img
+								src="../../images/icons/bullet_plus.png">Add/Remove Users</a>
+						</li>
+						<li><a href="./edit_group_permissions.jag?groupId=<%print(resp[i]);%>"><img
+								src="../../images/icons/bullet_edit.png">Edit Permissions</a>
+						</li>
+					</ul>
+				</td>
+			</tr>
+			<%
+				}
+			}else if(resp != null){
+				
+			%>
+			<tr height="30px">
+				<td><%print(resp);%></td>
+				<td><%
+				data = {
+					"application": "svn","operation": "getUserList","content":{"groupId":resp}
+				};
+				var ldapJson = post(url, stringify(data) ,optionalHeaders);
+				var respUsr = parse(ldapJson.data).getUserListResponse.return;
+				if(respUsr instanceof Array){
+					print(respUsr.length);
+				}else{
+					print("0");
+				}
+				%>
+				
+				
+				</td>
+				<td>
+					<ul class="operation-list">
+						<li><a href="./delete_group_confirm.jag?groupId=<%print(resp);%>" > <img
+								src="../../images/icons/bullet_cross.png"> Delete
+						</a></li>
+						<li><a href="./user_list.jag?groupId=<%print(resp);%>" ><img
+								src="../../images/icons/bullet_plus.png">Add/Remove Users</a>
+						</li>
+						<li><a href="./edit_group_permissions.jag?groupId=<%print(resp);%>"><img
+								src="../../images/icons/bullet_edit.png">Edit Permissions</a>
+						</li>
+					</ul>
+				</td>
+			</tr>
+			<%
+			}
+			
+			%>
+
+		</tbody>
+	</table>
+
+	<table>
+
+
+	</table>
+
+
+
+
+</div>
+
+

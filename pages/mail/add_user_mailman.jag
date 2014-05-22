@@ -1,0 +1,212 @@
+<div>
+	<%
+	var config = require('../../config.json');
+	var groupId = request.getParameter("groupId");
+	var url  = config.services.mailman;
+	var data = {
+		"application": "mailman","operation": "getListMembers","content":{
+		"fqdn_listname":groupId}
+	};
+	var optionalHeaders = {
+		"Content-Type": "application/json","Accept":"application/json"};
+		var ldapJson = post(url, stringify(data) ,optionalHeaders);
+		var resp = parse(ldapJson.data).entries;
+		if(resp==null){
+			resp= new Array();
+		}
+		urlLdap  = config.services.ldap;
+		data = {
+			"application": "ldap","operation": "searchEntity","content":{
+			"objectClass": "inetOrgPerson","dn":"ou=staff,dc=wso2,dc=com","attributes":"uid,mail,givenName,displayName"}
+		};
+		ldapJson = post(urlLdap, stringify(data) ,optionalHeaders);
+		var users = parse(ldapJson.data).result.entry;
+
+		var notAddedUsers = new Array();
+		for(var i=0;i<users.length;i++){
+			var got = false;
+			for(var j=0;j<resp.length;j++){
+				if(users[i].mail==resp[j].address.trim()){
+					got=true;
+					break;
+				}
+
+
+			}
+
+			if(!got){
+				notAddedUsers.push(users[i].mail);
+			}
+		}
+		%>
+	<br />
+	<center>
+		<h4>Manage users</h4>
+	</center>
+	<br />
+	<hr />
+	<p>Add/Remove user from group</p>
+	<br />
+	<table class="setPriviledge">
+		<tr>
+			<td style="width: 500px; border: 1px solid;">
+				<div style="overflow: scroll; max-height: 300px">
+					<table id="notAddedSideTable">
+						<thead>
+							<tr>
+								<th>Users</th>
+							</tr>
+						</thead>
+						<tbody id="notAddedSide">
+							<%for(var i=0;i<notAddedUsers.length;i++){%>
+							<tr><td><input type="checkbox" id="<%print(notAddedUsers[i]);%>" /> <%print(notAddedUsers[i]);%>
+							</td></tr>
+							<%}
+
+
+							%>
+						</tbody>
+					</table>
+				</div>
+			</td>
+			<td style="width: 80px; vertical-align: middle;"><input type="button"
+				value="Add >>" style="width: 80px" onclick="add()" /> <input
+				type="button" value="<< Remove" style="width: 80px"
+				onclick="removeItem()" />
+			</td>
+			<td style="width: 500px; border: 1px solid">
+				<div style="overflow: scroll; max-height: 300px">
+					<table id="addedSideTable">
+					<thead>
+					<tr><th>Users</th></tr>
+					</thead>
+					<tbody id="addedSide">
+						<%
+						if(resp!=null){
+							if(resp instanceof Array){
+							for(var i=0;i<resp.length;i++){
+						%>
+						<tr><td><input type="checkbox" id="<%print(resp[i].address);%>" /> <%print(resp[i].address);%>
+						</td></tr>
+						<%
+								}
+							}else{
+								%>
+						<tr><td><input type="checkbox" id="<%print(resp.address);%>" /> <%print(resp.address);%>
+						</td></tr>
+						<%
+							}
+						}
+						%>
+						</tbody>
+					</table>
+				</div>
+			</td>
+
+		</tr>
+
+	</table>
+
+	<hr />
+	<table>
+		<tr>
+			<td><input type="button" value="Cancel"
+				style="width: 80px; height: 60px; padding-right: 50px" />
+			</td>
+			<td>
+				<form action="../../controller/mail/add_remove_user.jag"
+					method="post">
+					<input type="hidden" value="" name="members" id="members" /> <input
+						type="hidden" value="<%print(groupId);%>" name="groupId" /> <input
+						type="submit" onclick="okClicked()" value="Ok"
+						style="width: 80px; height: 60px" />
+				</form>
+
+			</td>
+		</tr>
+	</table>
+	<hr>
+
+</div>
+<script type="text/javascript">
+	var members={};
+	function add(){
+		var leftPanel = document.getElementById("notAddedSide");
+		var nodes = leftPanel.rows;
+		for(var i=0;i<nodes.length;i++){
+			
+			if(nodes[i].firstChild.firstChild!=null){
+				if(nodes[i].firstChild.firstChild.checked){
+					if(members[nodes[i].firstChild.firstChild.id]==null){
+						 members[nodes[i].firstChild.firstChild.id]=true;
+					}else{
+						delete members[nodes[i].firstChild.firstChild.id];
+					}
+					//var rightPanel = document.getElementById("addedSide");
+					//rightPanel.innerHTML="<tr class='odd'>"+nodes[i].innerHTML+"</tr>"+rightPanel.innerHTML;
+					$('#addedSideTable').dataTable().fnAddData( [nodes[i].firstChild.innerHTML]);
+					var pos =$("#notAddedSideTable").dataTable().fnGetPosition(nodes[i]);
+					$("#notAddedSideTable").dataTable().fnDeleteRow(pos);
+					//document.getElementById("notAddedSide").deleteRow(0);
+					
+					//i--;
+				}
+				
+			}
+		}
+		//reBuildTables();
+		$("#notAddedSideTable").dataTable().fnDraw();
+		$("#addedSideTable").dataTable().fnDraw();
+		
+	}
+
+	function removeItem(){
+		var rightPanel = document.getElementById("addedSide");
+		var nodes = rightPanel.rows;
+		for(var i=0;i<nodes.length;i++){
+			if(nodes[i].firstChild.firstChild!=null){
+				if(nodes[i].firstChild.firstChild.checked){
+					if(members[nodes[i].firstChild.firstChild.id]==null){
+					 members[nodes[i].firstChild.firstChild.id]=false;
+					}else{
+						delete members[nodes[i].firstChild.firstChild.id];
+					}
+					//var leftPanel = document.getElementById("notAddedSide");
+					//leftPanel.innerHTML="<tr class='odd'>"+nodes[i].innerHTML+"</tr>"+leftPanel.innerHTML;
+					$('#notAddedSideTable').dataTable().fnAddData( [nodes[i].firstChild.innerHTML]);
+					//document.getElementById("addedSideTable").deleteRow(0);
+					var pos =$("#addedSideTable").dataTable().fnGetPosition(nodes[i]);
+					$("#addedSideTable").dataTable().fnDeleteRow(pos);
+				}
+				
+			}
+		}
+		//reBuildTables();
+		$("#notAddedSideTable").dataTable().fnDraw();
+		$("#addedSideTable").dataTable().fnDraw();
+	}
+
+	function okClicked(){
+		document.getElementById("members").value=JSON.stringify(members);
+	}
+	$(document).ready(function() {
+		reBuildTables();
+	} );
+
+	function reBuildTables(){
+		$('#notAddedSideTable').dataTable({
+			"bScrollInfinite": true,
+	        "bScrollCollapse": true,
+	        "sScrollY": "200px",
+	        "aaSorting": [[ 4, "desc" ]]
+		});
+
+		$('#addedSideTable').dataTable({
+			"bScrollInfinite": true,
+	        "bScrollCollapse": true,
+	        "sScrollY": "200px",
+	        "aaSorting": [[ 4, "desc" ]]
+		});
+	}
+</script>
+

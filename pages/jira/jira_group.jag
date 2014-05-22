@@ -1,0 +1,139 @@
+
+<%
+include('../../controller/jira/controller.jag');
+
+
+include('../../controller/common.jag');
+include('../../controller/user_management/controller.jag');
+
+var config = require('../../config.json');
+%>
+
+
+<%
+var user = session.get("user");
+if(user!=null){
+	
+	var roleList = getRoles(user.mail);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+		
+	
+%>
+
+
+
+<div id="workArea">
+
+	<div id="middle">
+		<h2>JIRA Groups Management</h2>
+		
+		<%//print(getUserGroups("maliya10"));%>
+		
+		<br />
+
+		<p>The JIRA Group Browser allows you to browse,add,remove groups in
+			JIRA.</p>
+	</div>
+	<br />
+	<div>
+		<table width="100%">
+			<tr>
+				<td class="middle-comp">
+					<div>
+						<h4>Search Group</h4>
+						<input type="text" id="jgrpsearchtxt" /> <input id="jgrpsearchbtn"
+							value="Search" type="submit">
+					</div>
+				</td>
+
+			</tr>
+		</table>
+	</div>
+
+	<br />
+	<%
+	
+	var log=new Log();
+	var url  = config.services.jira;
+	var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+	
+	var respgrps=getAllGroups();
+
+	var jiragroups=[];
+		
+	for (grpi=0 ; grpi < respgrps.length; grpi++){
+
+			var respond2 =getGroup(respgrps[grpi].name);		
+
+			var grpsize=respond2.users.size;
+			jiragroups.push({"name" : respgrps[grpi].name , "size" : grpsize});
+			
+	}					
+			//print(jiragroups);
+			
+	%>
+
+	<table class="styledLeft">
+		<thead>
+			<tr>
+				<th>Group Name</th>
+				<th>Users</th>
+				<th>Operations</th>
+			</tr>
+		</thead>
+		<tbody>
+			<%
+			for (grpi=0 ; grpi < jiragroups.length; grpi++){
+			%>
+			<tr height="30px">
+				<td><%print(jiragroups[grpi].name);%></td>
+				<td><%print(jiragroups[grpi].size);%></td>
+				<td>
+					<ul class="operation-list">
+						<li><a href="../../pages/jira/delete_group_confirm.jag?groupname=<%print(jiragroups[grpi].name);%>"> <img
+								src="../../images/icons/bullet_cross.png"> Delete
+						</a></li>
+						<li><a href="../../pages/jira/user_list.jag?groupname=<%print(jiragroups[grpi].name);%>"
+							><img
+								src="../../images/icons/bullet_plus.png">Add/Remove Users</a>
+						</li>
+						<li><a href="../../pages/jira/edit_group.jag?groupname=<%print(jiragroups[grpi].name);%>"><img
+								src="../../images/icons/bullet_edit.png">Edit Permissions</a>
+						</li>
+					</ul>
+				</td>
+			</tr>
+			<%
+	}
+	%>
+
+		</tbody>
+	</table>
+
+	<table>
+
+
+	</table>
+
+
+
+
+</div>
+
+<%
+	}else {
+		showPermissionDenied();
+	}
+
+}
+
+%>
+
+

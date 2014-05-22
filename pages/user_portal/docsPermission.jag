@@ -1,0 +1,81 @@
+<%
+var config = require('../../config.json');
+var url  = config.services.docs;
+var data = {
+	"application": "docs","operation": "getGroupList","content":{
+}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var resp = parse(ldapJson.data).getGroupsResponse.getGroupsReturn.getGroupsReturn;
+	var groupList=[];
+	if(resp!=null){
+		if(resp instanceof Array){
+			for(var i=0; i<resp.length;i++){
+				groupList.push(resp[i]["$"]);
+			}
+
+		}else{
+			groupList.push(resp["$"].name);
+		}
+	}
+	%>
+	
+	
+	<div>
+	<br />
+	<center>
+		<h4>Add/Remove Docs premissions requests</h4>
+
+		<br />
+		<table class="setPriviledge">
+			<tr>
+				<td style="width: 300px; border: 1px solid;">
+					<div style="overflow: scroll; max-height: 300px">
+						<ul id="docsGroupList">
+							<%for(var i=0;i<groupList.length;i++){%>
+							<li><input type="checkbox" id="<%print(groupList[i]);%>" ><%print(groupList[i]);%></li>
+							<%}%>
+						</ul>
+
+					</div>
+				</td>
+			</tr>
+
+		</table>
+		<br /> <input type="button" style="width: 140px"
+			value="Request Permissions" onclick="onDocsSubmitClicked()" /> <br /> <br />
+	</center>
+</div>
+<script type="text/javascript">
+$(document).ready(function() {
+	for(var i=0;i<docsAvlPermissions.length;i++){
+		document.getElementById(docsAvlPermissions[i]).checked=true;
+		document.getElementById(docsAvlPermissions[i]).disabled=true;
+	}
+	for(var i=0;i<docsRequestAddPermissions.length;i++){
+		document.getElementById(docsRequestAddPermissions[i]).checked=true;
+	}
+	
+	
+} );
+
+function onDocsSubmitClicked(){
+	docsRequestAddPermissions=[];
+	var docsGroupList = document.getElementById("docsGroupList");
+	var nodes = docsGroupList.children;
+	for(var i=0;i<nodes.length;i++){
+		if(nodes[i].firstChild!=null){
+			if(nodes[i].firstChild.checked&&!nodes[i].firstChild.disabled){
+				var groupId = nodes[i].firstChild.id;
+				docsRequestAddPermissions.push(groupId);
+			}
+		}
+	}
+	update('docs');
+	closeLightbox();
+}
+</script>
+
+	

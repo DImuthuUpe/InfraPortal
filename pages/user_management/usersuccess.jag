@@ -1,0 +1,145 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+%>
+
+<div id="middle">
+	<div id="workArea">
+		<h2>User created successfully</h2>
+		<br />
+
+		<table>
+			<tbody>
+				<tr>
+					<td style="width: 150px">UID *</td>
+					<td>dimuthuu
+				
+				</tr>
+
+				<tr>
+					<td>Password *</td>
+					<td>*********
+				
+				</tr>
+
+				<tr>
+					<td>Email *</td>
+					<td>dimuthuu@wso2.com
+				
+				</tr>
+
+				<tr>
+					<td>Given Name</td>
+					<td>Dimuthu</td>
+
+				</tr>
+
+				<tr>
+					<td>Display Name</td>
+					<td>Dimuthu Upeksha
+				
+				</tr>
+
+
+
+				<tr>
+					<td>Mobile</td>
+					<td>0719084638
+				
+				</tr>
+
+			</tbody>
+		</table>
+		<hr>
+		<table>
+			<tbody>
+				<tr>
+					<td style="width: 150px">LDAP Roles</td>
+					<td></td>
+					<td></td>
+				</tr>
+
+				<tr>
+					<td></td>
+					<td>Admin</td>
+					<td style="vertical-align: middle;"></td>
+				</tr>
+				<tr>
+					<td></td>
+					<td>User 1</td>
+					<td style="vertical-align: middle;"></td>
+				</tr>
+			</tbody>
+		</table>
+		<hr>
+		Assigned Groups 
+		<br/><br/>
+		<table>
+			<tr>
+				<td style="width: 150px">JIRA</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Jira Group 1</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Jira Group 2</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Jira Group 3</td>
+			</tr>
+			
+			<tr>
+				<td>SVN</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Svn Group 1</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Svn Group 2</td>
+			</tr>
+			
+			<tr>
+				<td>Docs</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Docs Group 1</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Docs Group 2</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Docs Group 3</td>
+			</tr>
+			
+			<tr>
+				<td>Mailman</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Mail List 1</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td>Mail List 2</td>
+			</tr>
+
+		</table>
+	</div>
+
+</div>
+<%
+include('../../includes/footer.jag');
+%>

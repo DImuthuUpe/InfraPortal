@@ -1,0 +1,34 @@
+<%
+var config = require('../../config.json');
+	var roleList =  request.getParameter("roleList");
+	var groupName =  request.getParameter("groupName");
+	var deleteList =  request.getParameter("deleteList");
+		
+	roleList = JSON.parse(roleList);
+	deleteList = JSON.parse(deleteList);
+	
+	var url  = config.services.svn;
+	
+	var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+	for(key in roleList){
+		var data = {
+				"application": "svn","operation": "addGroupToProject","content":{
+				"groupId":groupName,"projectPath":roleList[key][0],"priviledge":roleList[key][1]}
+		};
+		print(data);
+		var ldapJson = post(url, stringify(data) ,optionalHeaders);
+		print(ldapJson);
+	}
+	
+	for(key in deleteList){
+		var data = {
+				"application": "svn","operation": "removeGroupFromProject","content":{
+				"groupId":groupName,"projectPath":deleteList[key]}
+		};
+		print(data);
+		var ldapJson = post(url, stringify(data) ,optionalHeaders);
+		print(ldapJson);
+	}
+	
+	response.sendRedirect("../../pages/svn/edit_group_permissions.jag?groupId="+groupName);
+%>

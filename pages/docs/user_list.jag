@@ -1,0 +1,170 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/common.jag');
+include('../../controller/user_management/controller.jag');
+
+var config = require('../../config.json');
+
+if(user!=null){
+	
+	var roleList = getRoles(user.mail);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+
+
+%>
+<div id="lightbox"></div>
+<div
+	id="lightbox-shadow" onclick="closeLightbox()"></div>
+<div id="middle">
+
+	<h2>Manage Docs user list</h2>
+
+
+	<%
+	var groupId = request.getParameter("groupId");
+	var url  = config.services.docs;
+	var data = {
+		"application": "docs","operation": "getGroupList","content":{
+	}
+	};
+	var optionalHeaders = {
+		"Content-Type": "application/json","Accept":"application/json"};
+		var ldapJson = post(url, stringify(data) ,optionalHeaders);
+		var resp = parse(ldapJson.data).getGroupsResponse.getGroupsReturn.getGroupsReturn;
+		//print(groupId);
+		%>
+	<div id="workArea">
+		<table>
+			<tr>
+				<td>Select group</td>
+				<td><select onchange="onGroupSelect(this)">
+						<option value="">Select Group</option>
+						<%if(resp instanceof Array){
+							for(var i=0;i<resp.length;i++){
+						%>
+						<option value="<%print(resp[i].$);%>"
+						<%if(resp[i].$==groupId)print("selected='selected'");%>><%print(resp[i].$);%></option>
+						<%
+							}
+						}else{%>
+						<option value="<%print(resp.$);%>"
+						<%if(resp[i].$==groupId)print("selected='selected'");%>><%print(resp.$);%></option>
+						<%}
+
+
+
+						%>
+
+				</select>
+				</td>
+			</tr>
+
+		</table>
+
+		<br />
+
+		<p>User List</p>
+		<hr />
+
+		<br /> <input type="button" value="Add/Remove User"
+			onclick="lightbox('','./add_user_docs.jag?groupId=<%print(groupId);%>')" />
+		<br />
+	</div>
+</div>
+<script type="text/javascript">	
+function onGroupSelect(elem){
+	window.location.replace("./user_list.jag?groupId="+elem.value);
+}
+function lightbox(insertContent, ajaxContentUrl){
+
+	// add lightbox/shadow <div/>'s if not previously added
+	if($('#lightbox').size() == 0){
+		var theLightbox = $('<div id="lightbox"/>');
+		var theShadow = $('<div id="lightbox-shadow"/>');
+		$(theShadow).click(function(e){
+			closeLightbox();
+		});
+		$('body').append(theShadow);
+		$('body').append(theLightbox);
+	}
+
+	// remove any previously added content
+	$('#lightbox').empty();
+
+	// insert HTML content
+	if(insertContent != null){
+		$('#lightbox').append(insertContent);
+	}
+
+	// insert AJAX content
+	if(ajaxContentUrl != null){
+		// temporarily add a "Loading..." message in the lightbox
+		$('#lightbox').append('<p class="loading">Loading...</p>');
+
+		// request AJAX content
+		$.ajax({
+			type: 'GET',
+			url: ajaxContentUrl,
+			success:function(data){
+				// remove "Loading..." message and append AJAX content
+				$('#lightbox').empty();
+				$('#lightbox').append(data);
+			},
+			error:function(){
+				alert('AJAX Failure!');
+			}
+		});
+	}
+
+	// move the lightbox to the current window top + 100px
+	$('#lightbox').css('top', $(window).scrollTop() + 100 + 'px');
+
+	// display the lightbox
+	$('#lightbox').show();
+	$('#lightbox-shadow').show();
+
+}
+
+// close the lightbox
+function closeLightbox(){
+
+	// hide lightbox and shadow <div/>'s
+	$('#lightbox').hide();
+	$('#lightbox-shadow').hide();
+
+	// remove contents of lightbox in case a video or other content is actively playing
+	$('#lightbox').empty();
+}
+
+$(document).ready(function() {
+	$('#userListTable').dataTable({
+		"bAutoWidth": false,
+		"sPaginationType": "full_numbers",
+		"bJQueryUI": true,
+		"aaSorting": [[ 4, "desc" ]]
+	});
+} );
+</script>
+
+<%
+
+	}else {
+		showPermissionDenied();
+	}
+
+}
+
+%>
+
+<%
+include('../../includes/footer.jag');
+%>

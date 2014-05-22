@@ -1,0 +1,28 @@
+{
+	"services":{
+		"svn":"http://localhost:8280/services/svn",
+		"ldap":"http://localhost:8280/services/ldap",
+		"jira":"http://localhost:8280/services/jira",
+		"docs":"http://localhost:8280/services/docs",
+		"mailman":"http://localhost:8280/services/mailman"
+	}
+	,
+	"gorups":{
+		"svn":{
+			"Admin":["wso2readonly","wso2commiters"],
+			"Intern":["wso2readonly"]
+		},
+		"jira":{
+			"Admin":["jira-administrators","jira-developers"],
+			"Intern":["jira-users"]
+		},
+		"docs":{
+			"Admin":[],
+			"Intern":[]
+		},
+		"mailman":{
+			"Admin":[],
+			"Intern":[]
+		}
+	}
+}

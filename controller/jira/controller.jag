@@ -1,0 +1,465 @@
+<%
+var log=new Log();
+
+function getGroup(groupname){
+	
+	log.info("JIRA : Retrieving group "+groupname);
+	var config = require('../../config.json');
+	var url  = config.services.jira;
+	var postdata = {
+				"application":"jira",
+				"operation":"getGroup","content":{
+				"groupname":groupname
+				}
+	};
+	var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+	
+	try {
+		log.debug("REQUEST URL : "+url);
+		log.debug("REQUEST DATA : " + stringify(postdata));	
+		
+		var resp = post(url, stringify(postdata) ,optionalHeaders);
+		
+		log.debug("RESPONSE DATA : " + stringify(resp));
+			
+	} catch (error){
+			
+		log.error("Connection Refused.");
+		throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+		return;
+	}		
+	
+	if(resp!=null && resp.data!=null){
+		var respgrp=JSON.parse(resp.data);
+		log.info("JIRA : Retrieving group Success.");
+		return respgrp;
+	}else{
+		
+		log.error("FAILED: JIRA : Retrieving group "+ groupname +". Response is null for the request.");
+		throw {"title":"Error in retrieving group "+ groupname,"details":"Please contact the system administrator."};
+		
+	}
+	
+}
+
+
+function getAllGroups(){	
+
+	log.info("JIRA : Retrieving List of Groups.");
+	var config = require('../../config.json');
+	var url  = config.services.jira;
+	var postdata = {"application": "jira","operation": "getGroups"};
+	var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+	
+	try {
+		log.debug("REQUEST URL : "+url);
+		log.debug("REQUEST DATA : " + stringify(postdata));	
+		var resp = post(url, stringify(postdata) ,optionalHeaders);
+		log.debug("RESPONSE DATA : " + stringify(resp));
+	} catch (error){
+			
+		log.error("Connection Refused.");
+		throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+		return;
+	}
+	
+	if(resp!=null && resp.data!=null){
+		var respgrps=JSON.parse(resp.data).groups;
+		log.info("JIRA : Retrieving List of Groups Success.");
+		return respgrps;
+	}else{
+		
+		log.error("FAILED: JIRA : Retrieving List of Groups. Response is null for the request.");
+		throw {"title":"Error in retrieving list of Groups","details":"Please contact the system administrator."};
+		
+	}
+	
+}
+
+
+function getAllProjects(){ //Done
+	
+	log.info("JIRA : Retrieving List of Projects.");
+	
+	var config = require('../../config.json');
+	var url  = config.services.jira;
+	var postdata = {"application":"jira","operation":"getAllProjects","content":{}};
+	var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+
+	try {
+		log.debug("REQUEST URL : "+url);
+		log.debug("REQUEST DATA : " + stringify(postdata));	
+		var resp = post(url, stringify(postdata) ,optionalHeaders);
+		log.debug("RESPONSE DATA : " + stringify(resp));
+	} catch (error){
+		
+		log.error("Connection Refused.");
+		throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+		return;
+	}
+
+	if(resp!=null && resp.data!=null){
+		
+		var respdata = parse(resp.data);			
+		var projects=[];
+		
+		for(var i=0;i<respdata.length;i++){
+			var project={};
+			project.key=respdata[i].key;
+			project.id=respdata[i].id;
+			project.name=respdata[i].name;
+			projects.push(project);
+		}
+		log.info("JIRA : Retrieving List of Projects Success.");
+		return projects;
+		
+	}else{
+		
+		log.error("FAILED: JIRA : Retrieving List of Projects. Response is null for the request.");
+		throw {"title":"Error in retrieving list of Projects","details":"Please contact the system administrator."};
+	}
+	
+}
+
+
+
+function getAllRoles(projkey){ //Done
+	log.info("JIRA : Getting roles of ProjectKey = " + projkey);
+	
+	var roles=[];
+	var rolenames=[];
+
+	var config = require('../../config.json');
+	var url  = config.services.jira;
+	var postdata={"application":"jira","operation":"getRolesOfProject","content":{"projectkeyOrid":projkey}};
+	var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+	
+	try {
+		log.debug("REQUEST URL : "+url);
+		log.debug("REQUEST DATA : " + stringify(postdata));	
+		var resp = post(url, stringify(postdata) ,optionalHeaders);
+		log.debug("RESPONSE DATA : " + stringify(resp));
+	} catch (error){
+		
+		log.error("Connection Refused.");
+		throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+		return;
+	}
+	
+	if(resp!=null && resp.data!=null){
+	
+		var respdata = parse(resp.data);
+		rolenames=Object.keys(respdata);
+	
+		var regex = new RegExp(/[0-9]+$/); //gets the last number of a string
+		for(var i=0;i<rolenames.length;i++){
+			var role={};
+			
+			var r=respdata[rolenames[i]];
+			var revId = regex.exec(r)[0];
+			role.name=rolenames[i];
+			role.id=revId;
+			roles.push(role);
+		}
+		
+		log.info(roles);
+		log.info("JIRA : Getting roles Success.");		
+		return roles;
+	
+	}else{
+		
+		log.error("FAILED: JIRA : Retrieving List of Roles. Response is null for the request.");
+		throw {"title":"Error in retrieving list of Roles","details":"Please contact the system administrator."};
+		
+	}
+	
+}
+
+
+function getProjectRolesOfGroup(groupname,projects,roles){
+	log.info("JIRA : Retrieving roles of the JIRA group "+groupname);
+	
+	var ERROR=false;
+	var config = require('../../config.json');
+	var url  = config.services.jira;
+	var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+	
+	var senddata=[];
+		
+	for(var k=0;k<projects.length;k++){
+	//for(var k=0;k<3;k++){
+		var project=projects[k];
+		
+		var senditem={};
+		
+		senditem.projname=project.name;
+		senditem.projkey=project.key;
+		senditem.projid=project.id;
+		
+		//log.info(senditem);
+		
+		
+		var grproles=[];
+		senditem.roles=grproles;
+		
+		for(var i=0;i<roles.length;i++){
+			
+		
+			postdata={"application":"jira","operation":"getRolesByIdOfProject","content":{"projectkeyOrid":project.key,"roleid":roles[i].id}};
+			
+			try {
+				log.debug("REQUEST URL : "+url);
+				log.debug("REQUEST DATA : " + stringify(postdata));	
+				var resp = post(url, stringify(postdata) ,optionalHeaders);
+				log.debug("RESPONSE DATA : " + stringify(resp));
+			} catch (error){
+				
+				log.error("Connection Refused.");
+				throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+				return;
+			}
+			
+			if(resp==null || resp.data == null){
+				ERROR=true;
+				break;
+			}
+			
+			respdata = JSON.parse(resp.data);
+			var actors=respdata.actors;
+			
+			//log.debug(actors);
+			
+			for(var l=0;l<actors.length;l++){
+				
+				var actor=actors[l];
+				if(actor.type=="atlassian-group-role-actor"){
+					if(actor.name==groupname){
+						log.info("Found :"+project.key +"-"+ roles[i].name);
+						grproles.push({"rolename":roles[i].name,"roleid":roles[i].id,"type":"0"});
+					}
+				}
+				
+			}
+			
+			
+						
+		}
+		
+		if (ERROR==true) {
+			log.error("FAILED: JIRA : Retrieving List of Roles of group "+ groupname +". Response is null for the request.");
+			throw {"title":"Error in retrieving list of Roles of Projects","details":"Please contact the system administrator."};
+			return [];
+		}
+		
+		if(grproles.length>0){
+			senddata.push(senditem);
+		}
+	}
+	
+	log.info("JIRA : Getting roles of Projects Success.");
+	return senddata;
+
+}
+
+function addGroupsToRoles(groupname,addList){ //Done
+		
+	var config = require('../../config.json');
+	var url  = config.services.jira;
+	var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+	
+	for(var i=0;i<addList.length;i++){
+		
+		var postdata = {
+			"application":"jira",
+			"operation":"addGroupToProjectRole","content":{
+			"groupname":groupname,"projectid":addList[i].projid,"roleid":addList[i].roleid
+			}
+		};
+		
+		try {
+			log.info("JIRA : Adding " + groupname +" to project/role - " + addList[i].projid +"/"+addList[i].roleid);
+			
+			log.debug("REQUEST URL : "+url);
+			log.debug("REQUEST DATA : " + stringify(postdata));	
+			var resp = post(url, stringify(postdata) ,optionalHeaders);
+			log.debug("RESPONSE DATA : " + stringify(resp));
+			if(stringify(resp).indexOf("addActorsToProjectRoleResponse")!=-1){
+				log.info("Adding role success")
+			}
+			
+		} catch (error){
+			
+			log.error("Connection Refused.");
+			throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+			return;
+		}
+		
+	}
+}
+
+function deleteGroupsFromRoles(groupname,deleteList){ //Done
+	var config = require('../../config.json');
+	var url  = config.services.jira;
+	var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+		
+	for(var i=0;i<deleteList.length;i++){
+		var postdata = {
+			"application":"jira",
+			"operation":"removeGroupFromProjectRole","content":{
+			"groupname":groupname,"projectid":deleteList[i].projid,"roleid":deleteList[i].roleid
+			}
+		};
+		
+		try {
+			log.info("JIRA : Removing " + groupname +" from project/role - " + deleteList[i].projid +"/"+deleteList[i].roleid);
+			
+			log.debug("REQUEST URL : "+url);
+			log.debug("REQUEST DATA : " + stringify(postdata));	
+			var resp = post(url, stringify(postdata) ,optionalHeaders);
+			log.debug("RESPONSE DATA : " + stringify(resp));
+			if(stringify(resp).indexOf("removeActorsFromProjectRoleResponse")!=-1){
+				log.info("Removing role success")
+			}
+			
+		} catch (error){
+			
+			log.error("Connection Refused.");
+			throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+			return;
+		}
+	}
+}
+
+function deleteGroup(groupname,swapgroupname){ //Done
+	
+	var success={};
+	var config= require("../../config.json");
+	var url  = config.services.jira;
+	var postdata = {
+		"application":"jira",
+		"operation":"deleteGroup","content":{
+		"groupname":groupname,"swapgroupname":swapgroupname
+		}
+	};
+	var optionalHeaders = {
+		"Content-Type": "application/json","Accept":"application/json"};
+		
+	try {
+		log.info("JIRA : Deleting " + groupname + " and adding its members to the group "+swapgroupname);
+		
+		log.debug("REQUEST URL : "+url);
+		log.debug("REQUEST DATA : " + stringify(postdata));	
+		var resp = post(url, stringify(postdata) ,optionalHeaders);
+		log.debug("RESPONSE DATA : " + stringify(resp));
+
+		if(stringify(resp).indexOf("deleteGroupResponse")!=-1){
+				log.info("JIRA : Removing group success");
+				success.code=true;
+				return success;
+		}else{
+			success.code=false;
+			success.error=resp.data;
+			return success;
+		}
+		
+	} catch (error){
+		
+		log.error("Connection Refused.");
+		throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+		return;
+	}
+	
+}
+
+function createGroup(groupname){  
+	
+	var success={};
+	var config= require("../../config.json");
+	var url  = config.services.jira;
+	var postdata = {
+		"application":"jira",
+		"operation":"createGroup","content":{
+		"groupname":groupname
+		}
+	};
+	var optionalHeaders = {
+		"Content-Type": "application/json","Accept":"application/json"};
+		
+		
+	try {
+		log.info("JIRA : Creating group " + groupname);
+		
+		log.debug("REQUEST URL : "+url);
+		log.debug("REQUEST DATA : " + stringify(postdata));	
+		var resp = post(url, stringify(postdata) ,optionalHeaders);
+		log.debug("RESPONSE DATA : " + stringify(resp));
+		
+		if(stringify(resp).indexOf("error")!=-1){
+			log.error("JIRA : ERROR creating group \""+groupname +"\"");
+			log.error(stringify(resp.data));
+			success.code=false;
+			success.error=resp.data;
+			return success;
+		}else{
+			log.info("JIRA : Creating group success");
+			success.code=true;
+			return success;
+		}			
+	} catch (error){
+		
+		log.error("Connection Refused.");
+		throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+		return;
+	}
+	
+}
+
+function getUserGroups(username){	
+	
+	log.info("JIRA : Getting groups of user " + username);
+	
+	var config= require("../../config.json");
+	var url  = config.services.jira;
+	var postdata = {
+		"application":"jira",
+		"operation":"getUserGroups","content":{"username":username
+		}
+	};
+	var optionalHeaders = {
+		"Content-Type": "application/json","Accept":"application/json"};
+		
+	try {
+		
+		log.debug("REQUEST URL : "+url);
+		log.debug("REQUEST DATA : " + stringify(postdata));	
+		var resp = post(url, stringify(postdata) ,optionalHeaders);
+		log.debug("RESPONSE DATA : " + stringify(resp));
+		
+	} catch (error){
+				
+		log.error("Connection Refused.");
+		throw {"title":"Connection Error to JIRA Proxy","details":"URL "+ url +" is not available.Please contact the system administrator."};
+		return;
+		
+	}
+	if(resp!=null && resp.data!=null){
+		log.info("JIRA : Getting groups of user success");
+		return JSON.parse(resp.data).groups.items;
+	}else{
+		log.error("JIRA : ERROR listing groups of \""+username +"\"");
+		log.error(stringify(resp.data));
+		var success={};
+		success.code=false;
+		success.error=resp.data;
+		return success;
+	}
+}
+
+
+
+%>

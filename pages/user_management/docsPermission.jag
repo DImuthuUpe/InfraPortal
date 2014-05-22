@@ -1,0 +1,161 @@
+
+<%var config = require('../../config.json');%>
+<div>
+	<br />
+	<center>
+		<h4>Set Docs Groups</h4>
+	</center>
+	<br />
+	<hr />
+	<p>Add to groups</p>
+	<br />
+	<table class="setPriviledge">
+		<tr>
+			<td style="width: 500px; border: 1px solid;">
+				<div style="overflow: scroll; max-height: 300px">
+					<table id="notAddedListTable">
+						<thead>
+							<tr>
+								<th>Groups</th>
+							</tr>
+						</thead>
+						<tbody id="notAddedList">
+						</tbody>
+					</table>
+				</div>
+			</td>
+			<td style="width: 80px; vertical-align: middle;"><input type="button"
+				value="Add >>" style="width: 80px" onclick="add()" /> <input
+				type="button" value="<< Remove" style="width: 80px"
+				onclick="removeItem()" />
+			</td>
+			<td style="width: 500px; border: 1px solid;">
+				<div style="overflow: scroll; max-height: 300px">
+					<table id="addedListTable">
+						<thead>
+							<tr>
+								<th>Groups</th>
+							</tr>
+						</thead>
+						<tbody id="addedList">
+						</tbody>
+					</table>
+				</div>
+			</td>
+		</tr>
+
+	</table>
+
+	<hr />
+	<table>
+		<tr>
+			<td><input type="button" value="Cancel"
+				style="width: 80px; height: 60px; padding-right: 50px" />
+			</td>
+			<td><input type="button" value="Ok" onclick="closeLightbox()" style="width: 80px; height: 60px" />
+			</td>
+		</tr>
+	</table>
+	<hr>
+
+</div>
+<%var url  = config.services.docs;
+			
+	var data = {"application": "docs","operation": "getGroupList","content":{}};
+	var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var resp = parse(ldapJson.data).getGroupsResponse.getGroupsReturn.getGroupsReturn;
+	
+			var groupList =[];
+			if(resp!=null){
+				if(resp instanceof Array){
+					groupList=resp;
+				}else{
+					groupList.push(resp);
+				}
+			}
+			var groupMap={};
+			for(var i=0;i<groupList.length;i++){
+				groupMap[groupList[i]["$"]]=true;
+			}
+%>
+<script type="text/javascript">
+	var notAddedList = <%print(groupMap);%>;
+	$(document).ready(function() {
+		for(group in docsGroupAddList){
+			if(docsGroupAddList[group]){
+			var rightList= document.getElementById("addedList");
+			rightList.innerHTML += "<tr><td><input type='checkbox' id='"+group+"'/>"+group+"</td></tr>";
+			notAddedList[group]=false;
+			}
+		}
+		for(group in notAddedList){
+			if(notAddedList[group]){
+				var leftList= document.getElementById("notAddedList");
+				leftList.innerHTML += "<tr><td><input type='checkbox' id='"+group+"'/>"+group+"</td></tr>";
+			}
+		}
+
+		$('#addedListTable').dataTable({
+			"bScrollInfinite": true,
+	        "bScrollCollapse": true,
+	        "sScrollY": "200px",
+	        "aaSorting": [[ 4, "desc" ]]
+		});
+
+		$('#notAddedListTable').dataTable({
+			"bScrollInfinite": true,
+	        "bScrollCollapse": true,
+	        "sScrollY": "200px",
+	        "aaSorting": [[ 4, "desc" ]]
+		});
+		
+		
+	} );
+
+	function add(){
+		var leftPanel = document.getElementById("notAddedList");
+		var nodes = leftPanel.rows;
+		for(var i=0;i<nodes.length;i++){
+			if(nodes[i].firstChild.firstChild!=null){
+				if(nodes[i].firstChild.firstChild.checked){
+					docsGroupAddList[nodes[i].firstChild.firstChild.id]=true;
+					//var rightPanel = document.getElementById("addedList");
+					//rightPanel.innerHTML="<tr>"+nodes[i].innerHTML+"</tr>"+rightPanel.innerHTML;
+					$('#addedListTable').dataTable().fnAddData( [nodes[i].firstChild.innerHTML]);
+					var pos =$("#notAddedListTable").dataTable().fnGetPosition(nodes[i]);
+					$("#notAddedListTable").dataTable().fnDeleteRow(pos);
+					i--;
+					//nodes[i].parentNode.removeChild(nodes[i]);
+				}
+				
+			}
+			$("#notAddedListTable").dataTable().fnDraw();
+			$("#addedListTable").dataTable().fnDraw();
+		}
+		
+	}
+
+	function removeItem(){
+		var rightPanel = document.getElementById("addedList");
+		var nodes = rightPanel.rows;
+		for(var i=0;i<nodes.length;i++){
+			if(nodes[i].firstChild.firstChild!=null){
+				if(nodes[i].firstChild.firstChild.checked){
+					docsGroupAddList[nodes[i].firstChild.firstChild.id]=false;
+					//var leftPanel = document.getElementById("notAddedList");
+					//leftPanel.innerHTML="<tr>"+nodes[i].innerHTML+"</tr>"+leftPanel.innerHTML;
+					//nodes[i].parentNode.removeChild(nodes[i]);
+					$('#notAddedListTable').dataTable().fnAddData( [nodes[i].firstChild.innerHTML]);
+					var pos =$("#addedListTable").dataTable().fnGetPosition(nodes[i]);
+					$("#addedListTable").dataTable().fnDeleteRow(pos);
+					i--;
+				}
+				
+			}
+			$("#notAddedListTable").dataTable().fnDraw();
+			$("#addedListTable").dataTable().fnDraw();
+		}
+		
+	}
+</script>

@@ -1,0 +1,47 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head></head>
+
+<body>Hi all
+</body>
+
+<%
+
+authenticate("rajitha","rajitha");
+
+function authenticate(userName, password) {
+
+	var configs = require('/portal.js').config();
+	//var portal = require('/modules/portal.js');
+	
+	//configs.login = portal.login;
+	//configs.logout = portal.logout;
+	//configs.register = portal.register;
+	//print(configs.server.https);
+	var server = require('/modules/server.js');
+	server.init(configs);
+	
+	var user = require('/modules/user.js');
+	user.init(configs);
+	
+	var login = user.login(userName, password);
+	
+	//var login =false;
+	if (login == true) {
+		//session.put("logged-in", "true");
+		//session.put("username", userName);
+		//response.sendRedirect("../main.jag");
+		print("Authenticated");
+	} else {
+        //session.invalidate();
+        //response.sendRedirect("../index.jag?reject=login");
+    	print("Not outhenticated")
+	}
+}
+%>
+
+</html>
+
+

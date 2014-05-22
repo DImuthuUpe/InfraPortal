@@ -1,0 +1,52 @@
+<%
+var templates = require('../../template.json');
+var data = request.getParameter("data");
+var template = JSON.parse(data);
+var mode="create";
+
+
+for(var i=0;i<templates.templates.length;i++){
+	if(templates.templates[i].templatename==template.templatename){
+		templates.templates.splice(i,1);
+		mode="edit";
+		break;
+	}	
+}
+
+templates.templates.push(template);
+
+var file = new File("../../template.json");
+file.open("w");
+file.write(stringify(templates));
+file.close();
+
+
+var templates = require('../../template.json');
+var success=false;
+
+for(var i=0;i<templates.templates.length;i++){
+	if(templates.templates[i].templatename==template.templatename){
+		success=true;
+		break;
+	}	
+}
+
+if(success){
+	%>
+	<script type="text/javascript">
+		alert("Successfully <%if(mode=='create'){%>created<%}else{%>edited<%}%> template '<%=template.templatename%>'");
+		window.location.replace("../../pages/user_management/create_ldapuser.jag");
+	</script>
+	<%	
+}else{
+	%>
+	<script type="text/javascript">
+		alert("Failed to <%if(mode=='create'){%>create<%}else{%>edit<%}%> template '<%=template.templatename%>'");
+		window.location.replace("../../pages/user_management/create_ldapuser.jag");
+	</script>
+	<%	
+}
+
+
+
+%>

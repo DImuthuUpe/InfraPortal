@@ -1,0 +1,29 @@
+<%
+	var config = require('../../config.json');
+	var members =  request.getParameter("members");
+	var groupId =  request.getParameter("groupId");
+	members = JSON.parse(members);
+	for(var key in members){
+		if(members[key]==true){
+			var url  = config.services.svn;
+			var data = {
+				"application": "svn","operation": "addUserToGroup","content":{
+				"groupId":groupId,"mail":key}
+			};
+			var optionalHeaders = {
+				"Content-Type": "application/json","Accept":"application/json"};
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			print(ldapJson);
+		}else if(members[key]==false){
+			var url  = config.services.svn;
+			var data = {
+				"application": "svn","operation": "removeUserFromGroup","content":{
+				"groupId":groupId,"mail":key}
+			};
+			var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			print(ldapJson);
+		}
+	}
+	response.sendRedirect("../../pages/svn/user_list.jag?groupId="+groupId);
+%>

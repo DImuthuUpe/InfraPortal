@@ -1,0 +1,372 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/jira/controller.jag');
+include('../../controller/common.jag');
+include('../../controller/user_management/controller.jag');
+
+var showpage=false;
+%>
+
+<%
+var log=new Log();
+var roles=[];
+var projects=[];
+
+try {
+
+	if(user!=null){
+	
+		var roleList = getRoles(user.mail);
+		for(var i=0;i<roleList.length;i++){
+			if(roleList[i]=="Admin"){
+				showpage=true;
+				break;
+			}
+		}
+	}
+	
+	if(showpage){
+	
+		projects=getAllProjects();
+		if (projects.length!=0) {
+			roles=getAllRoles(projects[0].key);
+		}
+			
+	}else{
+		
+		showPermissionDenied();
+
+	}
+	
+}catch (e){
+
+	showErrorDialog(e.title,e.details);
+	showpage=false;
+
+}
+
+
+%>
+
+<%
+if(showpage){
+%>
+
+<script type="text/javascript">
+var data=[];
+var projects=[];
+var roles=[];
+var groupname;
+
+<%
+for (var i=0;i<projects.length;i++){
+%>
+
+projects.push(<%print(projects[i]);%>);
+
+<%}%>
+
+<%
+for (var i=0;i<roles.length;i++){
+%>
+
+roles.push(<%print(roles[i]);%>);
+
+<%}%>
+
+
+</script>
+
+<div id="middle">
+
+	<div id="workArea">
+		<h2>JIRA Create Group</h2>
+		<br />	
+	
+	<br />
+		<table>
+			<tr>
+				<td style="padding-bottom: 20px;">
+					<div>
+						<h5>Group Name</h5>
+						<input id="grpnametxt" type="text" style="width: 200px"/>
+					</div>
+				</td>
+			</tr>
+		</table>
+		<table width="100%">
+			<tr>
+				<td  style="border-top: 1px solid #BCBEC0;padding-top: 20px;">
+					<h5>Role Settings</h5> <br>
+				</td>
+			</tr>
+			<tr>
+				<td width="30%">
+					<div>
+						<p>Select Project</p>
+						<select id="projlist" style="width: 200px">
+							<option>WSO2 ESB 8.1</option>
+							<option>WSO2 AS 2</option>
+						</select>
+					</div>
+				</td>
+				<td width="30%">
+					<div>
+						<p>Select Role</p>
+						<select id="rolelist" style="width: 200px">
+							<option>Administrator</option>
+							<option>Developer</option>
+							<option>User</option>
+						</select>
+					</div>
+				</td>
+				<td width="40%">
+					<div>
+						<br> <input type="submit" value="Add Role"
+							onclick="addRole()" />
+					</div>
+				</td>
+			</tr>
+		</table>
+
+	<br>
+
+
+	<table id="jirapermtable" class="styledLeft">
+		<thead>
+			<tr>
+				<th width="30%">Project Name</th>
+				<th width="30%">Roles</th>
+				<th width="40%">Operations</th>
+			</tr>
+		</thead>
+		<tbody>
+		
+		
+		
+			<tr>
+				<td width=200px></td>
+				<td width=200px></td>
+				<td width=100px></td>
+			</tr>
+		
+			<!--
+			<tr style="border-bottom-style: hidden; border-top-style: hidden;">
+				<td width="30%"></td>
+				<td width="30%">Developers</td>
+				<td width="40%"><a href=""><img src="../../images/icons/bullet_cross.png"> Delete</a></td>
+			</tr>
+			<tr style="border-top-style: hidden;">
+				<td width="30%"></td>
+				<td width="30%">Users</td>
+				<td width="40%"><a href=""><img src="../../images/icons/bullet_cross.png"> Delete</a></td>
+			</tr>
+
+			<tr>
+				<td width="30%">WSO2 AS 8.1</td>
+				<td width="30%">Developers</td>
+				<td width="40%"><a href=""><img src="../../images/icons/bullet_cross.png"> Delete</a></td>
+			</tr>
+			 -->
+			 
+			 
+		</tbody>
+	</table>
+	
+	<br/>
+	<form action="../../controller/jira/create_group.jag" method="post">
+	<input type ="hidden" name="addList" id="addList"/>
+	<input type ="hidden" name="deleteList" id="deleteList"/>
+	<input type ="hidden" name="groupName" id="groupName"/>
+	<input type="submit" onclick="submitData()" value="Create Group" />
+	</form>
+
+</div>
+
+</div>
+
+
+
+
+
+<script type="text/javascript">
+
+//console.log(JSON.stringify(projects));
+
+addProjectList();
+addRoleList();
+
+function addCurrentGroupRoles(){
+
+	var table=document.getElementById("jirapermtable");
+
+	for(var j=0 ; j<data.length ;j++){
+	
+		var item=data[j];
+		
+		
+		var row;
+		var roles=item.roles;
+		
+		for(var i=0 ;i<roles.length;i++){
+			row=table.insertRow(table.rows.length);
+			
+			if(i==0){
+				row.insertCell(0).innerHTML=item.projname;		
+			}else{
+				row.insertCell(0).innerHTML="";	
+			}
+			var rolenamecell=row.insertCell(1);
+			var opercell=row.insertCell(2);
+			if(item.roles[i].type=="-1"){
+				rolenamecell.innerHTML='<p style="color:red;opacity:0.5">'+item.roles[i].rolename+'</p>';
+				rolenamecell.bgColor="#F6CECE";
+				opercell.bgColor="#F6CECE";
+			}else if(item.roles[i].type=="+1"){
+				rolenamecell.innerHTML='<p style="color:green">'+item.roles[i].rolename+'</p>';			
+				rolenamecell.bgColor="#CEF6CE";
+				opercell.bgColor="#CEF6CE";
+			}else{
+				rolenamecell.innerHTML='<p>'+item.roles[i].rolename+'</p>';
+				
+			}
+			
+			opercell.innerHTML='<input type="button" id="'+3+'" onclick="removeRole('+j+','+i+')" style="background-image: url(\'../../images/icons/bullet_cross.png\');"></td>';
+ 		}
+		
+	}
+	
+}
+
+
+function addRoleList(){
+	var rolelist=document.getElementById("rolelist");
+	console.log(rolelist);
+
+	rolelist.innerHTML="";
+
+	for(var i=0;i<roles.length;i++){
+
+		var selitem=document.createElement("option");
+		selitem.text=roles[i].name;
+		rolelist.add(selitem);
+	}
+
+	
+}
+
+function addProjectList(){
+	var projlist=document.getElementById("projlist");
+	console.log(projlist);
+
+	projlist.innerHTML="";
+
+	for(var i=0;i<projects.length;i++){
+
+		var selitem=document.createElement("option");
+		selitem.text=projects[i].name;
+		projlist.add(selitem);
+	}
+
+}
+
+
+function clearTable(){
+	var table1=document.getElementById("jirapermtable");
+	var len=table1.rows.length;
+	
+	for(var i=2;i<len;i++){
+		table1.deleteRow(2);
+	}
+	//table.rows[1].innerHTML='<td width="30%"></td><td width="30%"></td><td width="40%"></td>';
+	
+}
+
+function removeRole(proji,rolei){
+	console.log(proji+" "+rolei);
+	if(data[proji].roles[rolei].type=="0" || data[proji].roles[rolei].type=="-1"){
+		data[proji].roles[rolei].type="-1";
+		console.log("marked as deleted :");
+		console.log(data[proji].roles[rolei]); 
+	}else{
+		data[proji].roles.splice(rolei,1);		
+	}
+	
+	clearTable();
+	addCurrentGroupRoles();
+}
+
+function addRole(){
+	var projindex=document.getElementById("projlist").selectedIndex;
+	var roleindex=document.getElementById("rolelist").selectedIndex;
+
+	console.log(projindex + " " + roleindex);
+
+	if(projindex>=0 && roleindex >=0){
+		var add=1;
+		var proji=-1;
+		for(var i=0;i<data.length;i++){
+			
+			if(data[i].projname==projects[projindex].name){
+				proji=i;
+				for(var j=0;j<data[i].roles.length;j++){
+					if(data[i].roles[j].rolename==roles[roleindex].name){
+						console.log(data[i].roles[j].name);
+						add=0;
+					}
+				}	
+								
+			}
+			
+		}
+		if(add==1){
+			if(proji==-1){
+				var item={"projname":projects[projindex].name,"projid":projects[projindex].id,"projkey":projects[projindex].key,"roles":[{"rolename":roles[roleindex].name, "roleid":roles[roleindex].id, "type":"+1"}]};
+				data.push(item);
+			}else{
+				data[proji].roles.push({"rolename":roles[roleindex].name, "roleid":roles[roleindex].id, "type":"+1"});				
+			}
+		}
+
+		clearTable();
+		addCurrentGroupRoles();
+		
+	}
+}
+
+
+function submitData(){
+
+	var groupname=document.getElementById("grpnametxt").value;
+	
+	var addroles=[];
+	var deleteroles=[];
+	for(var i=0;i<data.length;i++){
+
+		for(var j=0;j<data[i].roles.length;j++){
+			if(data[i].roles[j].type=="+1"){
+				addroles.push({"projkey":data[i].projkey,"projid":data[i].projid,"roleid":data[i].roles[j].roleid});
+			}else if(data[i].roles[j].type=="-1"){
+				deleteroles.push({"projkey":data[i].projkey,"projid":data[i].projid,"roleid":data[i].roles[j].roleid});
+			}
+				
+		}
+	}
+	console.log(addroles);
+	console.log(deleteroles);
+	document.getElementById("addList").value=JSON.stringify(addroles);
+	document.getElementById("deleteList").value=JSON.stringify(deleteroles);
+	document.getElementById("groupName").value=groupname;
+	
+}
+
+</script>
+
+<%
+}
+%>
+
+<%
+include('../../includes/footer.jag');
+%>

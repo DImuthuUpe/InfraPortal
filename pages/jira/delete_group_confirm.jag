@@ -1,0 +1,63 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/common.jag');
+include('../../controller/user_management/controller.jag');
+
+var groupname = request.getParameter("groupname");
+var showpage=false;
+
+if(user!=null){
+	
+		var roleList = getRoles(user.mail);
+		for(var i=0;i<roleList.length;i++){
+			if(roleList[i]=="Admin"){
+				showpage=true;
+				break;
+			}
+		}
+}
+
+%>
+
+<%
+if(showpage){
+%>
+
+
+<div id="middle">
+
+	<h2 id="infotitle">Do you want to delete JIRA group "<%print(groupname);%>"</h2>
+	
+	<div id="workArea">
+	<table>
+		<tr>
+			<td><input type="button" value="Yes" style="width: 80px" onclick="deleteUser()"></td>
+			<td><input type="button" value="No" style="width: 80px" ></td>
+		
+		
+		</tr>
+	</table>
+		
+	</div>
+</div>
+
+<script type="text/javascript">
+		function deleteUser(){
+			window.location.replace("../../controller/jira/delete_group.jag?groupname=<%print(groupname);%>");			
+		}
+</script>
+
+<%
+}else{
+
+	showPermissionDenied();
+
+}
+%>
+
+
+<%
+include('../../includes/footer.jag');
+%>

@@ -1,0 +1,27 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+
+var id = request.getParameter("id");
+var application = request.getParameter("application");
+var notifications = require('../../notifications.json');
+notifications.notifications.splice(id,1);
+var file = new File('../../notifications.json');
+file.open("w");
+file.write(JSON.stringify(notifications));
+file.close();
+//print(notifications);
+
+%>
+
+<h2>Notification Successfully deleted</h2>
+<br/>
+<br/>
+<form action="../../pages/user_management/notifications.jag">
+<input type="submit" value="Continue"/>
+</form>
+
+
+<%
+include('../../includes/footer.jag');
+%>

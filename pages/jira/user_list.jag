@@ -1,0 +1,207 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/user_management/controller.jag');
+include('../../controller/common.jag');
+%>
+
+<%
+var config = require('../../config.json');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	
+	}
+	if(access){
+
+%>
+
+<div id="lightbox"></div>
+<div
+	id="lightbox-shadow" onclick="closeLightbox()"></div>
+<div id="middle">
+
+	<h2>Manage JIRA user list</h2>
+	<%var groupId = request.getParameter("groupname");
+	var url  = config.services.jira;
+	var data = {
+		"application": "svn","operation": "getGroups","content":{
+	}
+	};
+	var optionalHeaders = {
+		"Content-Type": "application/json","Accept":"application/json"};
+		var ldapJson = post(url, stringify(data) ,optionalHeaders);
+		var resp = parse(ldapJson.data).groups;
+		var groups=[];
+		if(resp!=null){
+			if(resp instanceof Array){
+				groups = resp;
+			}else{
+				groups.push(resp);
+			}
+		}
+		//print(groups);
+		%>
+
+
+	<div id="workArea">
+		<table>
+			<tr>
+				<td>Select group</td>
+				<td><select onchange="onGroupSelect(this)">
+						<option value="">Select Group</option>
+						
+						<%
+							for(var i=0;i<groups.length;i++){
+						%>
+						<option value="<%print(groups[i].name);%>"<%if(groups[i].name==groupId)print("selected='selected'");%>><%print(groups[i].name);%></option>
+						<%
+							}
+						%>
+							
+
+				</select></td>
+			</tr>
+
+		</table>
+		<br /> <input type="button" value="Add/Remove User"
+			onclick="lightbox('','../../pages/jira/add_user_jira.jag?groupId=<%print(groupId);%>')" />
+		<br />
+			
+
+		<p>User List</p>
+		<hr />
+		<table class="styledLeft" id="userListTable">
+			<thead>
+				<tr>
+					<th>Email</th>
+				</tr>
+			</thead>
+			<tbody>
+				<%
+				data = {
+					"application": "jira","operation": "getGroupUsers","content":{"groupname":groupId}
+				};
+				
+				var ldapJson = post(url, stringify(data) ,optionalHeaders);
+				if(parse(ldapJson.data).users!=null){
+					var respUsr = parse(ldapJson.data).users.multiRef;
+					
+					if(respUsr!=null&&!respUsr["@nil"]){
+						if(respUsr instanceof Array){
+							for(var i=0;i<respUsr.length;i++){
+								if(respUsr[i].email!=null){
+								%>
+									<tr>
+										<td><%print(respUsr[i].email["$"]);%></td>
+									</tr>
+								
+								<%
+								}
+							}
+						}
+					}
+				}
+				%>	
+				
+			</tbody>
+		</table>
+
+	
+
+
+	</div>
+</div>
+
+<script type="text/javascript">
+function onGroupSelect(elem){
+	window.location.replace("../../pages/jira/user_list.jag?groupname="+elem.value);
+}
+function lightbox(insertContent, ajaxContentUrl){
+
+	// add lightbox/shadow <div/>'s if not previously added
+	if($('#lightbox').size() == 0){
+		var theLightbox = $('<div id="lightbox"/>');
+		var theShadow = $('<div id="lightbox-shadow"/>');
+		$(theShadow).click(function(e){
+			closeLightbox();
+		});
+		$('body').append(theShadow);
+		$('body').append(theLightbox);
+	}
+
+	// remove any previously added content
+	$('#lightbox').empty();
+
+	// insert HTML content
+	if(insertContent != null){
+		$('#lightbox').append(insertContent);
+	}
+
+	// insert AJAX content
+	if(ajaxContentUrl != null){
+		// temporarily add a "Loading..." message in the lightbox
+		$('#lightbox').append('<p class="loading">Loading...</p>');
+
+		// request AJAX content
+		$.ajax({
+			type: 'GET',
+			url: ajaxContentUrl,
+			success:function(data){
+				// remove "Loading..." message and append AJAX content
+				$('#lightbox').empty();
+				$('#lightbox').append(data);
+			},
+			error:function(){
+				alert('AJAX Failure!');
+			}
+		});
+	}
+
+	// move the lightbox to the current window top + 100px
+	$('#lightbox').css('top', $(window).scrollTop() + 100 + 'px');
+
+	// display the lightbox
+	$('#lightbox').show();
+	$('#lightbox-shadow').show();
+
+}
+
+// close the lightbox
+function closeLightbox(){
+
+	// hide lightbox and shadow <div/>'s
+	$('#lightbox').hide();
+	$('#lightbox-shadow').hide();
+
+	// remove contents of lightbox in case a video or other content is actively playing
+	$('#lightbox').empty();
+}
+
+$(document).ready(function() {
+	$('#userListTable').dataTable({
+		"bAutoWidth": false,
+		"sPaginationType": "full_numbers",
+		"bJQueryUI": true,
+		"aaSorting": [[ 4, "desc" ]]
+	});
+} );
+</script>
+
+<%
+	}else{
+		showPermissionDenied();
+	}
+}
+
+%>
+<%
+include('../../includes/footer.jag');
+%>

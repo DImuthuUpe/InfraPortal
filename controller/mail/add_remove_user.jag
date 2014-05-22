@@ -1,0 +1,55 @@
+<%
+    var log = new Log("INFRA_PORTAL");
+    var config = require('../../config.json');
+	
+		
+	var members =  request.getParameter("members");  	
+    var groupId =  request.getParameter("groupId");
+    var list_id = groupId.replace("@","."); 
+
+	members = JSON.parse(members);
+	for(var key in members){
+		if(members[key]==true){
+			var url  = config.services.mailman;
+			log.debug("REQUEST URL: "+url);
+			var data = {
+				"application": "mailman","operation": "joinMailList","content":{
+					"list_id":list_id,"subscriber":key,"delivery_mode":"regular"}
+			};
+			log.debug("REQUEST DATA: "+data);
+			var optionalHeaders = {
+				"Content-Type": "application/json","Accept":"application/json"};
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			log.debug("RESPONSE DATA: "+ldapJson);			
+			log.info("MEMBER SUBSCRIBED: "+"Member "+key+" on "+list_id);
+			
+		}else if(members[key]==false){
+			var url  = config.services.mailman;
+			log.debug("REQUEST URL: "+url);
+			var data = {
+				"application": "mailman","operation": "getListMemberRecord","content":{
+					"fqdn_listname":groupId,"role":"member","address":key}
+			};
+			log.debug("REQUEST DATA: "+data);
+			var optionalHeaders = {
+				"Content-Type": "application/json","Accept":"application/json"};
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			log.debug("RESPONSE DATA: "+ldapJson);
+			log.info("MEMBER RECORD ACQUIRED: "+"Member "+key+" on "+list_id);
+            var self_link = JSON.parse(ldapJson.data).self_link;
+			var member_id=self_link.replace("http://localhost:8001/3.0/members/",""); 
+			log.debug("REQUEST URL: "+url);
+			var data = {
+				"application": "mailman","operation": "leaveMailList","content":{
+				"member_id":member_id}
+			};
+			log.debug("REQUEST DATA: "+data);
+			var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+			var ldapJson=post(url, stringify(data) ,optionalHeaders);
+			log.debug("RESPONSE DATA: "+ldapJson);
+			log.info("MEMBER UNSUBSCRIBED: "+"Member "+key+" on "+list_id);
+			
+		}
+	}
+	response.sendRedirect("../../pages/mail/user_list.jag?groupId="+groupId);
+%>

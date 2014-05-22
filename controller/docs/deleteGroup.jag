@@ -1,0 +1,22 @@
+<%
+	var config = require('../../config.json');
+	var groupId = request.getParameter("groupId");
+	
+	var url  = config.services.docs;
+	var data = {
+		"application": "docs","operation": "deleteGroup","content":{
+		"groupId":groupId}
+	};
+	var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	
+	var resp = parse(ldapJson.data);
+	print(resp);
+	
+	if(resp.removeGroupResponse!=null){
+		response.sendRedirect("../../pages/group_management/group_list.jag#tabs|Product:docs");
+	}else{
+		print("Failed!");
+	}
+%>

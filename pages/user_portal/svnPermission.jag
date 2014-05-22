@@ -1,0 +1,75 @@
+<%
+var config = require('../../config.json');
+var url  = config.services.svn;
+var data = {
+	"application": "svn","operation": "getGroupList","content":{
+}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var resp = parse(ldapJson.data).getGroupListResponse.return;
+	var groupList=[];
+	if(resp!=null){
+		if(resp instanceof Array){
+			groupList=resp;
+		}else{
+			groupList.push(resp);
+		}
+	}
+	%>
+<div>
+	<br />
+	<center>
+		<h4>Add/Remove SVN premission requests</h4>
+
+		<br />
+		<table class="setPriviledge">
+			<tr>
+				<td style="width: 300px; border: 1px solid;">
+					<div style="overflow: scroll; max-height: 300px">
+						<ul id="svnGroupList">
+							<%for(var i=0;i<groupList.length;i++){%>
+							<li><input type="checkbox" id="<%print(groupList[i]);%>" ><%print(groupList[i]);%></li>
+							<%}%>
+						</ul>
+
+					</div>
+				</td>
+			</tr>
+
+		</table>
+		<br /> <input type="button" style="width: 140px"
+			value="Request Permissions" onclick="onSvnSubmitClicked()" /> <br /> <br />
+	</center>
+</div>
+<script type="text/javascript">
+$(document).ready(function() {
+	for(var i=0;i<svnAvlPermissions.length;i++){
+		document.getElementById(svnAvlPermissions[i]).checked=true;
+		document.getElementById(svnAvlPermissions[i]).disabled=true;
+	}
+	for(var i=0;i<svnRequestAddPermissions.length;i++){
+		document.getElementById(svnRequestAddPermissions[i]).checked=true;
+	}
+	
+	
+} );
+
+function onSvnSubmitClicked(){
+	svnRequestAddPermissions=[];
+	var svnGroupList = document.getElementById("svnGroupList");
+	var nodes = svnGroupList.children;
+	for(var i=0;i<nodes.length;i++){
+		if(nodes[i].firstChild!=null){
+			if(nodes[i].firstChild.checked&&!nodes[i].firstChild.disabled){
+				var groupId = nodes[i].firstChild.id;
+				svnRequestAddPermissions.push(groupId);
+			}
+		}
+	}
+	update('svn');
+	closeLightbox();
+}
+</script>
+

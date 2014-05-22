@@ -1,0 +1,81 @@
+<%
+var config = require('../../config.json');
+var url  = config.services.jira;
+var data = {
+	"application": "jira","operation": "getGroups","content":{
+}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var resp = JSON.parse(ldapJson.data).groups;
+	
+	var groupList=[];
+	if(resp!=null){
+		if(resp instanceof Array){
+			for(var i=0; i<resp.length;i++){
+				groupList.push(resp[i].name);
+			}
+			
+		}else{
+			groupList.push(resp.name);
+		}
+	}
+	%>
+
+	<div>
+	<br />
+	<center>
+		<h4>Add/Remove JIRA premissions requests</h4>
+
+		<br />
+		<table class="setPriviledge">
+			<tr>
+				<td style="width: 300px; border: 1px solid;">
+					<div style="overflow: scroll; max-height: 300px">
+						<ul id="jiraGroupList">
+							<%for(var i=0;i<groupList.length;i++){%>
+							<li><input type="checkbox" id="<%print(groupList[i]);%>" ><%print(groupList[i]);%></li>
+							<%}%>
+						</ul>
+
+					</div>
+				</td>
+			</tr>
+
+		</table>
+		<br /> <input type="button" style="width: 140px"
+			value="Request Permissions" onclick="onJiraSubmitClicked()" /> <br /> <br />
+	</center>
+</div>
+<script type="text/javascript">
+$(document).ready(function() {
+	for(var i=0;i<jiraAvlPermissions.length;i++){
+		document.getElementById(jiraAvlPermissions[i]).checked=true;
+		document.getElementById(jiraAvlPermissions[i]).disabled=true;
+	}
+	for(var i=0;i<jiraRequestAddPermissions.length;i++){
+		document.getElementById(jiraRequestAddPermissions[i]).checked=true;
+	}
+	
+	
+} );
+
+function onJiraSubmitClicked(){
+	jiraRequestAddPermissions=[];
+	var jiraGroupList = document.getElementById("jiraGroupList");
+	var nodes = jiraGroupList.children;
+	for(var i=0;i<nodes.length;i++){
+		if(nodes[i].firstChild!=null){
+			if(nodes[i].firstChild.checked&&!nodes[i].firstChild.disabled){
+				var groupId = nodes[i].firstChild.id;
+				jiraRequestAddPermissions.push(groupId);
+			}
+		}
+	}
+	update('jira');
+	closeLightbox();
+}
+</script>
+
+	

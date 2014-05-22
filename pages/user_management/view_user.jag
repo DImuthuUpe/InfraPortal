@@ -1,0 +1,275 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/user_management/controller.jag');
+include('../../controller/jira/controller.jag');
+var config = require('../../config.json');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+		
+%>
+<%
+		var mail = request.getParameter("mail");
+
+		var url  = config.services.svn;
+		var data = {
+			"application": "svn","operation": "getUserGroupList","content":{
+			"mail":mail}
+		};
+		var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+
+			//////////////svn//////////
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			//print(ldapJson);
+			var resp = parse(ldapJson.data).getUserGroupListResponse.return;
+			var svnUserGroups =[];
+			if(resp!=null){
+				if(resp instanceof Array){
+					svnUserGroups = resp;
+
+				}else if(resp["@nil"]==null){
+					svnUserGroups.push(resp);
+				}
+			}
+			////////////jira///////////
+
+			var jiraUserGroupsTemp = getUserGroups(mail);
+			var jiraUserGroups=[];
+			for(var i=0;i<jiraUserGroupsTemp.length;i++){
+				jiraUserGroups.push(jiraUserGroupsTemp[i].name);
+			}
+
+			////////////mailman/////////////
+			url  = config.services.mailman;
+			data = {
+				"application": "mailman","operation":"getMemberSubsciptions","content":{
+				"subscriber":mail}
+			};
+			ldapJson = post(url, stringify(data) ,optionalHeaders);
+			var parsed = JSON.parse(ldapJson.data);
+			var entries =parsed.entries;
+
+			var mailUserGroups=[];
+
+			if(entries!=null){
+				for(var i=0;i<entries.length;i++){
+					mailUserGroups.push(entries[i].list_id);
+				}
+			}
+
+
+			//////////Docs/////////////////////////
+			url  = config.services.docs;
+			data = {
+				"application": "docs","operation":"getUserGroups","content":{
+				"username":mail}
+			};
+			ldapJson = post(url, stringify(data) ,optionalHeaders);
+			var entries = parse(ldapJson.data).getUserGroupsResponse.getUserGroupsReturn.getUserGroupsReturn;
+			var docsUserGroups=[];
+
+			if(entries!=null){
+				if(entries instanceof Array){
+					for(var i=0;i<entries.length;i++){
+						docsUserGroups.push(entries[i]["$"]);
+					}
+				}else{
+					docsUserGroups.push(entries["$"]);
+				}
+			}
+
+			//print(docsUserGroups);
+			
+	var roles = getRoles(mail);
+	
+	//print("<br/><br/>roles"+roles);
+	url  = config.services.ldap;
+	data = {
+		"application": "ldap","operation": "searchEntity","content":{
+		"objectClass": "inetOrgPerson",
+		"dn":"ou=staff,dc=wso2,dc=com",
+		"attributes":"uid,mail,givenName,displayName,homePhone",
+		"filters":"mail="+mail}
+	};
+	ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var entries = parse(ldapJson.data).result.entry;
+	%>
+
+
+<div id="middle">
+	<div id="workArea">
+		<div id="middle-discp">
+			<h2>View user details</h2>
+		</div>
+
+		<div>
+			<table width="100%">
+				<tr>
+					<td class="middle-comp">
+						<div>
+							<h4>Username</h4>
+							<input type="text" value="<%print(mail);%>" /> <input
+								value="View" type="submit">
+						</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<hr>
+		<div>
+			<br>
+			<h4>LDAP Profile</h4>
+			<br>
+
+			<table>
+				<tbody>
+					<tr>
+						<td width="200px"><b>UID</b></td>
+						<td width="250px"><%print(entries.uid);%></td>
+					</tr>
+					<tr>
+						<td width="200px"><b>Email</b></td>
+						<td width="250px"><%print(entries.mail);%></td>
+					</tr>
+					<tr>
+						<td width="200px"><b>Given Name</b></td>
+						<td width="250px"><%print(entries.givenName);%></td>
+					</tr>
+					<tr>
+						<td width="200px"><b>Display Name</b></td>
+						<td width="250px"><%print(entries.displayName);%></td>
+					</tr>
+					<tr>
+						<td width="200px"><b>Mobile</b></td>
+						<td width="250px"><%print(entries.homePhone);%></td>
+					</tr>
+				</tbody>
+
+			</table>
+			<br>
+
+			<h5>Roles</h5>
+			<br>
+			<table class="styledLeft">
+				<thead>
+					<tr>
+						<th width="100px">Role Name</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<%for(var i=0;i<roles.length;i++){%>
+					<tr height="30px">
+						<td width="100px"><%print(roles[i]);%></td>
+					</tr>
+					<%}%>
+				</tbody>
+			</table>
+		</div>
+		<hr>
+		<div>
+			<br>
+			<h4>SVN Groups</h4>
+			<br>
+			<table class="styledLeft">
+				<thead>
+					<tr>
+						<th width="100px">Group Name</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					
+					<%for(var i=0;i<svnUserGroups.length;i++){%>
+					<tr height="30px">
+						<td width="100px"><%print(svnUserGroups[i]);%></td>
+					</tr>
+					<%}%>
+					
+				</tbody>
+			</table>
+		</div>
+		<hr>
+		<div>
+			<br>
+			<h4>JIRA Groups</h4>
+			<br>
+			<table class="styledLeft">
+				<thead>
+					<tr>
+						<th width="100px">Group Name</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<%for(var i=0;i<jiraUserGroups.length;i++){%>
+					<tr height="30px">
+						<td width="100px"><%print(jiraUserGroups[i]);%></td>
+					</tr>
+					<%}%>
+				</tbody>
+			</table>
+		</div>
+		<hr>
+		<div>
+			<br>
+			<h4>Docs Groups</h4>
+			<br>
+			<table class="styledLeft">
+				<thead>
+					<tr>
+						<th width="100px">Group Name</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<%for(var i=0;i<docsUserGroups.length;i++){%>
+					<tr height="30px">
+						<td width="100px"><%print(docsUserGroups[i]);%></td>
+					</tr>
+					<%}%>
+				</tbody>
+			</table>
+		</div>
+		<hr>
+		<div>
+			<br>
+			<h4>Mailman Lists</h4>
+			<br>
+			<table class="styledLeft">
+				<thead>
+					<tr>
+						<th width="100px">Group Name</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<%for(var i=0;i<mailUserGroups.length;i++){%>
+					<tr height="30px">
+						<td width="100px"><%print(mailUserGroups[i]);%></td>
+					</tr>
+					<%}%>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+
+
+
+<%
+	}
+}
+include('../../includes/footer.jag');
+%>

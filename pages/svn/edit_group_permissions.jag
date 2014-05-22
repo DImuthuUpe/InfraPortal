@@ -1,0 +1,197 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/user_management/controller.jag');
+include('../../controller/common.jag');
+
+
+var groupId =  request.getParameter("groupId");
+var config = require('../../config.json');
+
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+		
+%>
+
+<div id="workArea">
+
+	<div id="middle">
+		<h2>SVN New Group</h2>
+		<br />
+
+		<p>Creates a new SVN Group.</p>
+	</div>
+	<hr />
+	<br />
+	<div>
+		<table>
+			<tr>
+				<td>
+					<div>
+						<h4>Group Name</h4>
+						<input type="text" id="name" value="<%print(groupId);%>" style="width: 250px" />
+					</div>
+				</td>
+
+				<td></td>
+				<td width="40%"></td>
+			</tr>
+		</table>
+
+		<hr />
+		<%var url  = config.services.svn;
+		var counter=0;
+		var data = {
+			"application": "svn","operation": "getProjectList","content":{
+			}
+			};
+			var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			var respProject = parse(ldapJson.data).getProjectListResponse.return;
+		
+			%>
+		<table>
+			<tr>
+				<td><br>
+					<h3>Project priviledge Settings</h3> <br>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div>
+						<h4>Select Project</h4>
+						<select id="projectName" style="width: 200px">
+							<%for(var i=0;i<respProject.length;i++){%>
+							<option value="<%print(respProject[i]);%>"><%print(respProject[i]);%></option>
+							<%}
+							%>
+						</select>
+					</div>
+				</td>
+
+				<td>
+					<div>
+						<h4>Select Mode</h4>
+						<select id="projectMode" style="width: 200px">
+							<option value="r">Read</option>
+							<option value="rw">Read/Write</option>
+						</select>
+					</div>
+				</td>
+				<td>
+					<div>
+						<br> <input type="submit" value="Add Role"
+							onclick="addRoles()" />
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+
+	<br>
+
+
+	<table class="styledLeft">
+		<thead>
+			<tr>
+				<th width="30%"><b>Project Name</b></th>
+				<th width="30%">Roles</th>
+				<th width="40%">Operations</th>
+			</tr>
+			</thead>
+			<tbody id="roleBody">
+			<%
+			for(var i=0;i<respProject.length;i++){
+			var projectPath = respProject[i];
+			data = {
+				"application": "svn","operation": "getGroupsFromProject","content":{
+				"projectPath":projectPath
+				}
+			};
+			ldapJson = post(url, stringify(data) ,optionalHeaders);
+			var respGroups = parse(ldapJson.data).getGroupsFromProjectResponse.return;
+			
+				if(respGroups!=null){
+					if(respGroups instanceof Array){
+						for (var j = 0; j<respGroups.length; j++) {
+							var priviledes = respGroups[j].split("=");
+							if(priviledes[0].trim()==groupId){
+								//if(priviledes[1].trim()=="r")priviledes[1]="Read";
+								//if(priviledes[1].trim()=="rw")priviledes[1]="Read/Write";
+								print('<tr><td width="30%">'+projectPath+'</td><td width="30%">'+priviledes[1].trim()+'</td><td width="40%"><input type="button" id="'+(counter++)+'" onclick="removeRole(this)" style="background-image: url(\'../../images/icons/bullet_cross.png\');"></td></tr>');
+							}
+						}
+					}else{
+						var priviledes = respGroups.split("=");
+						if(priviledes[0].trim()==groupId){
+							//if(priviledes[1].trim()=="r")priviledes[1]="Read";
+							//if(priviledes[1].trim()=="rw")priviledes[1]="Read/Write";
+							print('<tr><td width="30%">'+projectPath+'</td><td width="30%">'+priviledes[1].trim()+'</td><td width="40%"><input type="button" id="'+(counter++)+'" onclick="removeRole(this)" style="background-image: url(\'../../images/icons/bullet_cross.png\');"></td></tr>');
+						}
+					}
+				}		
+			}
+			%>
+		
+		</tbody>
+	</table>
+
+	<br /> <form action="../../controller/svn/edit_group.jag" method="post">
+	<input type ="hidden" name="roleList" id="roleList"/>
+	<input type ="hidden" name="deleteList" id="deleteList"/>
+	<input type ="hidden" name="groupName" id="groupName"/>
+	<input type="submit" onclick="submitClicked()" value="Edit Group" />
+	</form>
+
+
+</div>
+
+<script type="text/javascript">
+
+	var roleList={};
+	var deleteList={};
+	var counter = <%print(counter);%>;
+	function addRoles(){
+		var projectName = document.getElementById("projectName");
+		var projectMode = document.getElementById("projectMode");
+		var roleBody = document.getElementById("roleBody");
+		roleBody.innerHTML = roleBody.innerHTML+'<tr><td width="30%">'+projectName.value+'</td><td width="30%">'+projectMode.value+'</td><td width="40%"><input type="button" id="'+counter+'" onclick="removeRole(this)" style="background-image: url(\'../../images/icons/bullet_cross.png\');"></td></tr>'
+		roleList[counter]=[projectName.value,projectMode.value];
+		counter++;
+	}
+
+	function removeRole(elem){
+		var row = elem.parentNode.parentNode;
+		if(roleList[elem.id]==null){
+			deleteList[elem.id]=row.firstChild.innerHTML;
+		}
+		delete roleList[elem.id];
+		row.parentNode.removeChild(row);
+	}
+
+	function submitClicked(){
+		document.getElementById("groupName").value=document.getElementById("name").value;
+		document.getElementById("roleList").value=JSON.stringify(roleList);
+		document.getElementById("deleteList").value=JSON.stringify(deleteList);
+		
+	}
+</script>
+
+
+<%
+	}else {
+		showPermissionDenied();
+	}
+}
+include('../../includes/footer.jag');
+%>

@@ -1,0 +1,374 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+
+var config = require('../../config.json');
+
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+		
+%>
+
+<%
+var mail= request.getParameter("mail");
+var url  = config.services.ldap;
+var data = {
+	"application": "ldap","operation": "searchEntity","content":{
+	"objectClass": "inetOrgPerson",
+	"dn":"ou=staff,dc=wso2,dc=com",
+	"attributes":"uid,mail,givenName,displayName,homePhone",
+	"filters":"mail="+mail}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var entries = parse(ldapJson.data).result.entry;
+	//print(entries);
+	data = {
+		"application": "ldap","operation": "searchEntity",
+		"content":{
+		"objectClass": "groupOfNames",
+		"dn":"ou=groups,dc=wso2,dc=com",
+		"attributes":"cn,member","filters":""}
+	};
+	ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var grpEntries = parse(ldapJson.data).result.entry;
+	var roles = [];
+	var groups =[];
+	if(grpEntries!=null){
+		if(grpEntries instanceof Array){
+			for(var i=0;i<grpEntries.length;i++){
+				groups.push(grpEntries[i]);
+				var member = grpEntries[i].member;
+				//print(grpEntries[i].cn);
+				//print("<br/>")
+				if(member!=null){
+					if(member instanceof Array){
+						//print(member);
+						//print("<br/>");
+						for(var j=0;j<member.length;j++){
+							if(member[j]==entries.dn){
+								roles.push(grpEntries[i].cn);
+								break;
+							}
+						}
+					}else{
+						//print(member);
+						//print("<br/>");
+						if(member==entries.dn){
+							roles.push(grpEntries[i].cn);
+						}
+					}
+				}
+			}
+		}else{
+			var member = grpEntries.member;
+			groups.push(grpEntries);
+			print(grpEntries.cn);
+			//print("<br/>")
+			if(member!=null){
+				if(member instanceof Array){
+					//print(member);
+					//print("<br/>");
+					for(var j=0;j<member.length;j++){
+						if(member[j]==entries.dn){
+							roles.push(grpEntries.cn);
+							break;
+						}
+					}
+				}else{
+					//print(member);
+					//print("<br/>");
+					if(member==entries.dn){
+						roles.push(grpEntries.cn);
+					}
+				}
+			}
+		}
+	}
+	//print("<br/><br/>"+roles);
+
+	%>
+<div id="middle">
+
+	<h2>Infra Portal Edit User</h2>
+	<div id="lightbox"></div>
+	<div id="lightbox-shadow" onclick="closeLightbox()"></div>
+
+
+	<div id="workArea">
+		<form action="../../controller/user_management/editLDAPUser.jag" method="post">
+			<table>
+				<tbody>
+					<tr>
+						<td style="width: 150px">UID *</td>
+						<td><%print(entries.uid);%>
+					
+					</tr>
+
+					<tr>
+						<td>Password *</td>
+						<td><input type="checkbox" name="pwChk" onclick="onPwReset(this)"/><input style="width: 150px" type="password" name="password" id="password"
+							value="" disabled="disabled" />
+					
+					</tr>
+
+					<tr>
+						<td>Email *</td>
+						<td><input style="width: 150px" type="text" name="mail"
+							value="<%print(entries.mail);%>" />
+					
+					</tr>
+
+					<tr>
+						<td>Given Name</td>
+						<td><input style="width: 150px" type="text" name="givenName"
+							value="<%print(entries.givenName);%>" />
+					
+					</tr>
+
+					<tr>
+						<td>Display Name</td>
+						<td><input style="width: 150px" type="text" name="displayName"
+							value="<%print(entries.displayName);%>" />
+					
+					</tr>
+
+
+
+					<tr>
+						<td>Mobile</td>
+						<td><input style="width: 150px" type="text" name="mobile"
+							value="<%print(entries.homePhone);%>" />
+					
+					</tr>
+
+				</tbody>
+			</table>
+			<hr>
+			<table>
+				<tbody>
+					<tr>
+						<td style="width: 150px">Add roles</td>
+						<td></td>
+						<td></td>
+					</tr>
+					<%for(var j=0;j<roles.length;j++){%>
+					<tr>
+						<td></td>
+						<td><select>
+								<option value="<%print(roles[j]);%>"><%print(roles[j]);%></option>
+
+
+						</select></td>
+						<td style="vertical-align: middle;"><input type="button"
+							onclick="removeRole(this)" id='<%print(roles[j]);%>'
+							style="background-image: url('../../images/icons/bullet_cross.png');">
+						</td>
+					</tr>
+					<%}
+					%>
+					<tr>
+						<td></td>
+						<td><select id="0" onchange="roleOnChange(this)">
+
+								<option value="Add role">Add role</option>
+								<%for(var i=0;i<groups.length;i++){%>
+								<option value="<%print(groups[i].cn);%>"><%print(groups[i].cn);%></option>
+								<%}
+
+								%>
+
+						</select></td>
+						<td style="vertical-align: middle;"><input type="button" id='btn0'
+							onclick="removeCombo(this)"
+							style="background-image: url('../../images/icons/bullet_cross.png');">
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<table>
+				<tr>
+					<td><br /> 
+						<input type="hidden" id="dn" name="dn" value="<%print(entries.dn);%>"/> 
+						
+						<input type="hidden" id="roles" name="roles" /> 
+						<input type="hidden" id="deletedRoles" name="deletedRoles" /> 
+						<input type="submit" onclick="bindRoles()" value="Save Changes" />
+					</td>
+					<td><br /> <input type="button" value="Discard Changes" />
+					</td>
+				</tr>
+			</table>
+		</form>
+
+	</div>
+</div>
+<script type="text/javascript">
+function lightbox(insertContent, ajaxContentUrl){
+
+	// add lightbox/shadow <div/>'s if not previously added
+	if($('#lightbox').size() == 0){
+		var theLightbox = $('<div id="lightbox"/>');
+		var theShadow = $('<div id="lightbox-shadow"/>');
+		$(theShadow).click(function(e){
+			closeLightbox();
+		});
+		$('body').append(theShadow);
+		$('body').append(theLightbox);
+	}
+
+	// remove any previously added content
+	$('#lightbox').empty();
+
+	// insert HTML content
+	if(insertContent != null){
+		$('#lightbox').append(insertContent);
+	}
+
+	// insert AJAX content
+	if(ajaxContentUrl != null){
+		// temporarily add a "Loading..." message in the lightbox
+		$('#lightbox').append('<p class="loading">Loading...</p>');
+
+		// request AJAX content
+		$.ajax({
+			type: 'GET',
+			url: ajaxContentUrl,
+			success:function(data){
+				// remove "Loading..." message and append AJAX content
+				$('#lightbox').empty();
+				$('#lightbox').append(data);
+			},
+			error:function(){
+				alert('AJAX Failure!');
+			}
+		});
+	}
+
+	// move the lightbox to the current window top + 100px
+	$('#lightbox').css('top', $(window).scrollTop() + 100 + 'px');
+
+	// display the lightbox
+	$('#lightbox').show();
+	$('#lightbox-shadow').show();
+
+}
+
+// close the lightbox
+function closeLightbox(){
+
+	// hide lightbox and shadow <div/>'s
+	$('#lightbox').hide();
+	$('#lightbox-shadow').hide();
+
+	// remove contents of lightbox in case a video or other content is actively playing
+	$('#lightbox').empty();
+}
+
+var comboId = 0;
+
+function addRoleCombo(elem){
+	comboId++;
+	//alert(elem.id);	
+	var newCombo='<tr><td></td><td><select id='+comboId+' onchange="roleOnChange(this)"><option value="Add role">Add role</option><%for(var i=0;i<groups.length;i++){%><option value="<%print(groups[i].cn);%>"><%print(groups[i].cn);%></option><%}%></select></td><td style="vertical-align: middle;"><input type="button" id='+'btn'+comboId+' onclick="removeCombo(this)" style="background-image:url(\'../../images/icons/bullet_cross.png\'); "> </td></tr>';
+	var parentElem = elem.parentElement.parentElement.parentElement;
+    parentElem.innerHTML= parentElem.innerHTML+newCombo;
+}
+var roles={0:'Add role'};
+var deletedRoles=[];
+function roleOnChange(elem){
+	roles[elem.id]=elem.value;
+	//alert((elem.id*1+1*1));
+	var lastOne = true;
+	var counter=1;	
+	while(roles[elem.id*1+counter*1]!=null){
+		if(roles[elem.id*1+counter*1]!="deleted"){
+			lastOne = false;
+			break;
+		}
+		counter++;
+		
+	}
+	
+	if(lastOne){
+		roles[comboId*1+1*1]="Add role";
+		addRoleCombo(elem);
+		
+	}
+
+	for(var i=0;i<=comboId;i++){
+		if(roles[i]!="deleted"){
+			document.getElementById(i).value=roles[i];
+		}
+	}
+}
+
+function removeCombo(elem){
+	var parentElem = elem.parentElement.parentElement;
+	parentElem.innerHTML="";
+	btnid=elem.id;
+	var selectedId=btnid.substr(3,btnid.length);
+	roles[selectedId]="deleted";
+	
+}
+
+function removeRole(elem){
+	var parentElem = elem.parentElement.parentElement;
+	deletedRoles.push(elem.id);
+	parentElem.innerHTML="";
+}
+
+function bindRoles(){
+	var roleString="";
+	var deletedRoleString="";
+	var start=true;
+	for(var i=0;i<=comboId;i++){
+		if(roles[i]!="deleted"&&roles[i]!="Add role"){
+			if(start){
+				roleString+=roles[i];
+				start=false;
+			}else{
+				roleString+=","+roles[i];
+			}
+		}
+	}
+	start=true;
+	for(var i=0;i<deletedRoles.length;i++){
+		if(start){
+			deletedRoleString+=deletedRoles[i];
+			start=false;
+		}else{
+			deletedRoleString+=","+deletedRoles[i];
+		}
+	}
+	//alert(roleString);
+	document.getElementById("roles").value=roleString;
+	document.getElementById("deletedRoles").value=deletedRoleString;
+}
+
+function onPwReset(elem){
+	if(elem.checked){
+		document.getElementById("password").disabled=false;
+	}else{
+		document.getElementById("password").disabled=true;
+	}
+}
+</script>
+<%
+	}
+}
+include('../../includes/footer.jag');
+%>

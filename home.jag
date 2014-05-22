@@ -1,0 +1,22 @@
+
+<%
+var baseAt=".";
+include('includes/header.jag');
+%>
+
+
+<div id="middle">
+
+	<h2>Infra Portal Home</h2>
+
+	<p>Welcome to the Infra Portal Management Console</p>
+
+	<p>&nbsp;</p>
+
+	<div id="workArea">
+	<a href="pages/check_connectivity.jag">Check connectivity with cloud connectors</a>
+	</div>
+</div>
+<%
+include('includes/footer.jag');
+%>

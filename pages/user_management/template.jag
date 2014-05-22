@@ -1,0 +1,326 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/common.jag');
+include('../../controller/user_management/controller.jag');
+
+var mode =request.getParameter("mode");
+
+if(mode=="" || mode==null) 
+	mode="create";
+
+if(mode=="create"){
+	%>
+	<script type="text/javascript"> 
+		
+		var data={"templatename":"Main",
+				"objecttypes":[{"name":"inetOrgPerson","removeable":false}] 
+			,"attrtypes":[{"name":"uid", "mandatory":true,"removeable":false},
+			          	{"name":"userPassword","mandatory":true,"removeable":false},
+			          	{"name":"mail","mandatory":true,"removeable":false},
+			          	{"name":"givenName","mandatory":true,"removeable":false},
+			          	{"name":"cn","mandatory":true,"removeable":false}]
+			 };
+	</script>
+	<% 
+}else if(mode=="edit"){
+	
+	var templatename=request.getParameter("template");
+	
+	var templates = require('../../template.json').templates;
+	var selectedTemplate;
+	var hastemplate=false;
+	for(var i=0;i<templates.length;i++){
+		if(templates[i].templatename==templatename){
+			selectedTemplate=templates[i];
+			hastemplate=true;				
+			break;
+		}
+	}
+	
+	if(hastemplate){
+		%>
+		<script type="text/javascript">
+			var data=<%=selectedTemplate%>
+		</script>
+		<%
+	}
+	
+		
+}
+
+var showpage=false;
+
+%>
+
+<%
+var log=new Log();
+
+try {
+
+	if(user!=null){
+	
+		var roleList = getRoles(user.mail);
+		for(var i=0;i<roleList.length;i++){
+			if(roleList[i]=="Admin"){
+				showpage=true;
+				break;
+			}
+		}
+	}
+	
+}catch (e){
+	showErrorDialog("Error checking user permissions","Please check LDAP connectivity");
+	showpage=false;
+}
+
+%>
+
+
+
+<%
+if(showpage){
+	if(!(mode=="edit") || hastemplate==true){
+%>
+
+
+<div id="middle">
+	<h2><%if(mode=="create"){%>Create<%}else{%>Edit<%}%> LDAP User Template</h2>
+	<br/>	
+	<div id="workArea">
+		<table>
+			<tbody>
+			
+				<tr>
+					<td style="padding-bottom: 20px;">
+						<h5>Template Name *</h5>
+						<input id="tmpnametxt" type="text" style="width: 250px" <%if(mode=="edit"){%>readonly  value="<%=selectedTemplate.templatename%>"<%}%>/>					
+					</td>
+				</tr>
+				<tr>
+					<td style="border-top: 1px solid #BCBEC0;padding-top: 20px;">
+						<h5>Object Classes</h5> 
+					</td>
+				</tr>
+					<tr>
+					<td style="padding-bottom: 20px;padding-top: 20px;">
+						<table id="objecttable" class="styledLeft">
+							<tbody>	
+								<tr>	
+									<td>
+										<input id="objclassnametxt" type="text" style="width: 250px" value=""/>
+									</td>
+									<td>
+										<input id="addclsbtn" type="button" value="" onclick="addObjectType()"  style="background-image: url('../../images/icons/control_add.png');"/>							
+									</td>
+								</tr>
+							</tbody>	
+						</table>
+					</td>
+				</tr>
+				
+				<tr>
+					<td style="border-top: 1px solid #BCBEC0;padding-top: 20px;">
+						<h5>Object Attributes</h5> 
+						<br>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<table id="attrtable" class="styledLeft">
+							<tbody>	
+								<tr>	
+									<td>
+										<input id="attrnametxt" type="text" style="width: 250px" value=""/>
+									</td>
+									<td>
+										<input id="addattrbtn" type="button" value="" onclick="addAttrType()" style="background-image: url('../../images/icons/control_add.png');"/>							
+									</td>
+								</tr>
+							</tbody>	
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<br>
+						<form action="../../controller/user_management/create_template.jag" method="post">
+							<input type ="hidden" name="data" id="data"/>
+							<input type="submit" onclick="submitData()" value="<%if(mode=="create"){%>Create<%}else if(mode=="edit"){%>Edit<%}%> Template" />
+						</form>
+					</td>
+				</tr>
+				
+			</tbody>
+		</table>
+	</div>
+</div>
+
+
+<script type="text/javascript">
+
+
+refreshObjectTypesTable();
+refreshAttrTypesTable();
+
+
+function refreshObjectTypesTable(){
+
+	var table=document.getElementById("objecttable");
+
+	for(var j=0 ; j<data.objecttypes.length ;j++){
+	
+		var item=data.objecttypes[j];
+		
+		var row;
+
+		row=table.insertRow(table.rows.length-1);
+		var objtypecell=row.insertCell(0);
+		var opercell=row.insertCell(1);
+		objtypecell.innerHTML='<p>'+item.name+'</p>';
+		if(item.removeable){
+			opercell.innerHTML='<input type="button" onclick="removeObjectType('+j+')" style="background-image: url(\'../../images/icons/bullet_cross.png\');"></td>';
+		}
+
+	}
+	
+}
+
+function addObjectType(){
+	var name=document.getElementById("objclassnametxt").value;
+	objectlist=data.objecttypes;
+	var add=true;
+	if(name!=""){
+		for(var i=0;i<objectlist.length;i++){
+			if(name==objectlist[i].name){
+				add=false;
+			}
+		}
+	
+		if(add){
+			objectlist.push({"name":name,"removeable":true});
+		}
+		clearObjectTypesTable();
+		refreshObjectTypesTable();
+	}
+}
+
+function removeObjectType(index){
+	
+	var objectlist=data.objecttypes;
+	objectlist.splice(index,1);	
+	clearObjectTypesTable();
+	refreshObjectTypesTable();
+	
+}
+
+function clearObjectTypesTable(){
+	var table1=document.getElementById("objecttable");
+	var len=table1.rows.length;
+	
+	for(var i=0;i<len-1;i++){
+		table1.deleteRow(0);
+	}
+}
+
+
+function refreshAttrTypesTable(){
+
+	var table=document.getElementById("attrtable");
+
+	for(var j=0 ; j<data.attrtypes.length ;j++){
+	
+		var item=data.attrtypes[j];
+		
+		var row;
+		
+
+		row=table.insertRow(table.rows.length-1);
+		var attrtypecell=row.insertCell(0);
+		var opercell=row.insertCell(1);
+		var chkcell=row.insertCell(2);
+		attrtypecell.innerHTML='<p>'+item.name+'</p>';
+		
+		if(item.removeable){
+			opercell.innerHTML='<input type="button" onclick="removeAttrType('+j+')" style="background-image: url(\'../../images/icons/bullet_cross.png\');"></td>';
+		}
+
+		if(item.mandatory){
+			chkcell.innerHTML='<input type="checkbox" onclick="setMandatory(this.checked,'+j+')" checked>';
+		}else{
+			chkcell.innerHTML='<input type="checkbox" onclick="setMandatory(this.checked,'+j+')">';
+		}
+	}
+	
+}
+
+function addAttrType(){
+	var name=document.getElementById("attrnametxt").value;
+	attrlist=data.attrtypes;
+	var add=true;
+	if(name!=""){
+		for(var i=0;i<attrlist.length;i++){
+			if(name==attrlist[i].name){
+				add=false;
+			}
+		}
+	
+		if(add){
+			attrlist.push({"name":name,"mandatory":false,"removeable":true});
+		}
+		clearAttrTypesTable();
+		refreshAttrTypesTable();
+	}
+}
+
+function removeAttrType(index){
+	
+	var attrlist=data.attrtypes;
+	attrlist.splice(index,1);	
+	clearAttrTypesTable();
+	refreshAttrTypesTable();
+	
+}
+
+function clearAttrTypesTable(){
+	var table1=document.getElementById("attrtable");
+	var len=table1.rows.length;
+	
+	for(var i=0;i<len-1;i++){
+		table1.deleteRow(0);
+	}
+}
+
+function setMandatory(value,index){
+	
+	var attrlist=data.attrtypes;
+	attrlist[index].mandatory=value;
+	
+}
+
+
+function submitData(){
+	//alert(JSON.stringify(data));
+	data.templatename=document.getElementById("tmpnametxt").value;
+	document.getElementById("data").value=JSON.stringify(data);
+}
+
+
+</script>
+
+<%
+	}else{
+		
+		showErrorDialog("Error in Edit Template","Required template does not exist.");	
+		
+	}
+
+}else{
+		showPermissionDenied();
+}
+%>
+
+
+<%
+include('../../includes/footer.jag');
+%>

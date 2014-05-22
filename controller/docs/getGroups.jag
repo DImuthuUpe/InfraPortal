@@ -1,0 +1,53 @@
+<%
+var config = require('../../config.json');
+var url  = config.services.docs;
+var data = {
+	"application": "docs","operation": "getGroupList","content":{
+}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var resp = parse(ldapJson.data).getGroupsResponse.getGroupsReturn.getGroupsReturn;
+	//print(resp);
+	var groups = new Array();
+	if(resp instanceof Array){
+		for(var i=0;i<resp.length;++i){
+			groups[i]=resp[i].$;
+		}
+	}
+	else{
+		groups[i]=resp.$;
+	}
+
+	var url  = config.services.ldap;
+	var data = {
+		"application": "ldap","operation": "searchEntity","content":{
+		"objectClass": "inetOrgPerson","dn":"ou=staff,dc=wso2,dc=com","attributes":"uid,mail,givenName,displayName"}
+	};
+	var optionalHeaders = {
+		"Content-Type": "application/json","Accept":"application/json"};
+		var ldapJson = post(url, stringify(data) ,optionalHeaders);
+		var resp = parse(ldapJson.data).result.entry;
+		var users = new Array();
+		if(resp instanceof Array){
+			for(var i=0;i<resp.length;++i){
+				users[i]=resp[i].mail;
+			}
+		}
+		else{
+			users[i]=resp.mail;
+		}
+		var url  = config.services.docs;
+			var data = {
+				"application": "docs","operation": "getUserGroups","content":{
+					"username":users[users.length-2]
+				}
+			};
+			print(users[users.length-2]);
+			var optionalHeaders = {
+				"Content-Type": "application/json","Accept":"application/json"};
+				var ldapJson = post(url, stringify(data) ,optionalHeaders);
+				var resp = parse(ldapJson.data);
+				print(resp);
+		%>

@@ -1,0 +1,80 @@
+<%
+var config = require('../../config.json');
+var url  = config.services.mailman;
+var data = {
+	"application": "mailman","operation": "getLists","content":{
+}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var resp = JSON.parse(ldapJson.data).entries;
+	
+	var groupList=[];
+	if(resp!=null){
+		if(resp instanceof Array){
+			for(var i=0; i<resp.length;i++){
+				groupList.push(resp[i].list_id);
+			}
+			
+		}else{
+			groupList.push(resp.list_id);
+		}
+	}
+	%>
+<div>
+	<br />
+	<center>
+		<h4>Add/Remove Mailman premissions requests</h4>
+
+		<br />
+		<table class="setPriviledge">
+			<tr>
+				<td style="width: 300px; border: 1px solid;">
+					<div style="overflow: scroll; max-height: 300px">
+						<ul id="mailGroupList">
+							<%for(var i=0;i<groupList.length;i++){%>
+							<li><input type="checkbox" id="<%print(groupList[i]);%>" ><%print(groupList[i]);%></li>
+							<%}%>
+						</ul>
+
+					</div>
+				</td>
+			</tr>
+
+		</table>
+		<br /> <input type="button" style="width: 140px"
+			value="Request Permissions" onclick="onMailSubmitClicked()" /> <br /> <br />
+	</center>
+</div>
+<script type="text/javascript">
+$(document).ready(function() {
+	for(var i=0;i<mailAvlPermissions.length;i++){
+		document.getElementById(mailAvlPermissions[i]).checked=true;
+		document.getElementById(mailAvlPermissions[i]).disabled=true;
+	}
+	for(var i=0;i<mailRequestAddPermissions.length;i++){
+		document.getElementById(mailRequestAddPermissions[i]).checked=true;
+	}
+	
+	
+} );
+
+function onMailSubmitClicked(){
+	mailRequestAddPermissions=[];
+	var mailGroupList = document.getElementById("mailGroupList");
+	var nodes = mailGroupList.children;
+	for(var i=0;i<nodes.length;i++){
+		if(nodes[i].firstChild!=null){
+			if(nodes[i].firstChild.checked&&!nodes[i].firstChild.disabled){
+				var groupId = nodes[i].firstChild.id;
+				mailRequestAddPermissions.push(groupId);
+			}
+		}
+	}
+	update('mail');
+	closeLightbox();
+}
+</script>
+
+	

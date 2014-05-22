@@ -1,0 +1,46 @@
+<%
+var baseAt="../..";
+
+include("../../includes/header.jag");
+include('../../controller/jira/controller.jag');
+include('../../controller/common.jag');
+var showpage=true;
+
+
+var log=new Log();
+var groupname =request.getParameter("groupName");
+var addList=JSON.parse(request.getParameter("addList"));
+var deleteList=JSON.parse(request.getParameter("deleteList"));
+
+try{
+
+	if(addList!=null){
+		log.info("Adding permissions: "+ stringify(addList));
+		addGroupsToRoles(groupname,addList);
+	}
+	
+	
+	if(deleteList!=null){
+		log.info("Removing permissions: "+ stringify(deleteList));
+		deleteGroupsFromRoles(groupname,deleteList);
+	}
+	
+}catch (e){
+	showErrorDialog(e.title,e.details);
+	showpage=false;
+}
+
+if(showpage){
+%>
+
+	<script type="text/javascript">
+	window.location.replace("../../pages/jira/edit_group.jag?groupname=<%print(groupname);%>");
+	</script>
+
+<%
+}
+%>
+
+<%
+include("../../includes/footer.jag");
+%>

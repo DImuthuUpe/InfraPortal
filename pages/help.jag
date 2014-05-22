@@ -1,0 +1,6 @@
+<%
+var LdapConnector = Packages.com.dimuthuupeksha.infraportal.ldap.LDAPConnector;
+var connector = new LdapConnector();
+//userName = LdapConnector.getUIDForEmail(userName);
+print("dsfd");
+%>

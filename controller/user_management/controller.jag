@@ -1,0 +1,87 @@
+
+<%
+
+function getRoles(mail){
+	//print(mail);
+	var config = require('../../config.json');
+	var url  = config.services.ldap;
+	var data = {
+		"application": "ldap","operation": "searchEntity","content":{
+		"objectClass": "inetOrgPerson",
+		"dn":"ou=staff,dc=wso2,dc=com",
+		"attributes":"uid,mail,givenName,displayName,homePhone",
+		"filters":"mail="+mail}
+	};
+	var optionalHeaders = {
+				"Content-Type": "application/json","Accept":"application/json"};
+	//print(url);
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	//print(ldapJson);
+	var entries = parse(ldapJson.data).result.entry;
+	//print(entries);
+	data = {
+		"application": "ldap","operation": "searchEntity",
+		"content":{
+		"objectClass": "groupOfNames",
+		"dn":"ou=groups,dc=wso2,dc=com",
+		"attributes":"cn,member","filters":""}
+	};
+	ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var grpEntries = parse(ldapJson.data).result.entry;
+	var roles = [];
+	var groups =[];
+	if(grpEntries!=null){
+		if(grpEntries instanceof Array){
+			for(var i=0;i<grpEntries.length;i++){
+				groups.push(grpEntries[i]);
+				var member = grpEntries[i].member;
+				//print(grpEntries[i].cn);
+				//print("<br/>")
+				if(member!=null){
+					if(member instanceof Array){
+						//print(member);
+						//print("<br/>");
+						for(var j=0;j<member.length;j++){
+							if(member[j]==entries.dn){
+								roles.push(grpEntries[i].cn);
+								break;
+							}
+						}
+					}else{
+						//print(member);
+						//print("<br/>");
+						if(member==entries.dn){
+							roles.push(grpEntries[i].cn);
+						}
+					}
+				}
+			}
+		}else{
+			var member = grpEntries.member;
+			groups.push(grpEntries);
+			print(grpEntries.cn);
+			//print("<br/>")
+			if(member!=null){
+				if(member instanceof Array){
+					//print(member);
+					//print("<br/>");
+					for(var j=0;j<member.length;j++){
+						if(member[j]==entries.dn){
+							roles.push(grpEntries.cn);
+							break;
+						}
+					}
+				}else{
+					//print(member);
+					//print("<br/>");
+					if(member==entries.dn){
+						roles.push(grpEntries.cn);
+					}
+				}
+			}
+		}
+	}
+	return roles;
+	//print("<br/><br/>roles"+roles);
+}
+%>

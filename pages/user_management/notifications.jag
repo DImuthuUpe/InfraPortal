@@ -1,0 +1,76 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+var config = require('../../config.json');
+
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+		
+%>
+<div id="middle">
+	<div id="workArea">
+		<h2>Notifications</h2>
+		<br />
+		<hr />
+		<table id="notifications" class="styledLeft" 	>
+			<thead>
+				<tr>
+					<th>Id</th>
+					<th>Email</th>
+					<th>Application</th>
+					<th>Group</th>
+					<th>Date</th>
+					<th>Status</th>
+					<th>Delete</th>
+				</tr>
+			</thead>
+			<tbody>
+				<%
+				var notifications = require('../../notifications.json').notifications;
+				for(var i=0;i<notifications.length;i++){
+				
+	%>
+				<tr>
+					<td><%print(i+"");%></td>
+					<td><%print(notifications[i].mail);%></td>
+					<td><%print(notifications[i].request);%></td>
+					<td><%print(notifications[i].group);%></td>
+					<td><%print(notifications[i].date);%></td>
+					<td><%print(notifications[i].status);%></td>
+					<td><a href="../../controller/user_portal/deleteNotification.jag?id=<%print(i+"");%>&application=<%print(notifications[i].request);%>">Delete</a>  </td>
+				</tr>
+				<%
+	}
+	%>
+			</tbody>
+		</table>
+
+	</div>
+</div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#notifications').dataTable({
+		"bAutoWidth": false,
+		"sPaginationType": "full_numbers",
+		"bJQueryUI": true,
+		"aaSorting": [[ 4, "desc" ]]
+	});
+} );
+</script>
+
+<%
+	}
+}
+include('../../includes/footer.jag');
+%>

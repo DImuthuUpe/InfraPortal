@@ -1,0 +1,64 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/common.jag');
+include('../../controller/user_management/controller.jag');
+
+var config = require('../../config.json');
+
+
+if(user!=null){
+	
+	var roleList = getRoles(user.mail);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+
+%>
+<div id="workArea">
+
+	<div id="middle">
+
+		<h2>Docs New Group</h2>
+
+		<table>
+			<tbody>
+				<tr>
+					<td style="width: 150px">Group Name:</td>
+					<td><input id="groupId" style="width: 200px" type="text" /></td>
+				</tr>
+			</tbody>
+		</table>
+		<br />
+		<form action="../../controller/docs/addGroup.jag" method="post">
+			<input type="hidden" value="" name="groupName" id="groupName" />
+			<input type="submit" onclick="addPermission();" value="Ok" style="width: 80px" />
+			<input type="button" onclick="alert('cancel');" value="Cancel" style="width: 80px" />
+		</form>
+		<br />
+	</div>
+</div>
+<script type="text/javascript">
+function addPermission(){
+	document.getElementById("groupName").value=document.getElementById("groupId").value;
+}
+</script>
+
+<%
+
+	}else {
+		showPermissionDenied();
+	}
+
+}
+
+%>
+
+<%
+include('../../includes/footer.jag');
+%>

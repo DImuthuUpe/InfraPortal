@@ -1,0 +1,41 @@
+<%
+var log = new Log("INFRA PORTAL");
+var config = require('../../config.json');
+var groupId = request.getParameter("groupId");
+
+var url  = config.services.mailman;
+log.debug("REQUEST URL: "+url);
+var data = {
+	"application": "mailman","operation": "deleteList","content":{
+	"fqdn_listnameOrlist_id":groupId}
+};
+log.debug("REQUEST DATA: "+data);
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+var ldapJson = post(url, stringify(data) ,optionalHeaders);
+//var resp = parse(ldapJson.data);
+log.debug("RESPONSE DATA: "+ldapJson);
+log.info("MAILMAN LIST DELETED: "+groupId);
+log.debug("REQUEST URL: "+url);
+	
+var data = {
+	"application": "mailman","operation": "getListRecord","content":{
+	"fqdn_listnameOrlist_id":groupId}
+};	
+log.debug("REQUEST DATA: "+data);
+
+var ldapJson = post(url, stringify(data) ,optionalHeaders);
+log.debug("RESPONSE DATA: "+ldapJson);
+log.info("MAILMAN LIST RECORD ACQUIRED: "+groupId);
+
+var resp = parse(ldapJson.data).text;
+
+	if(resp=="404 Not Found"){
+	print("Mailing List Deleted");
+	}else{
+	print(resp);
+	}
+response.sendRedirect("../../pages/group_management/group_list.jag#tabs|Product:mail");
+	
+	
+	%>

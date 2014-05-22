@@ -1,0 +1,215 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+
+var config = require('../../config.json');
+include('../../controller/jira/controller.jag');
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+%>
+
+<div id="middle">
+	<div id="workArea">
+		<%
+		var mail = request.getParameter("mail");
+
+		var url  = config.services.svn;
+		var data = {
+			"application": "svn","operation": "getUserGroupList","content":{
+			"mail":mail}
+		};
+		var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+
+			//////////////svn//////////
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			//print(ldapJson);
+			var resp = parse(ldapJson.data).getUserGroupListResponse.return;
+			var svnUserGroups =[];
+			if(resp!=null){
+				if(resp instanceof Array){
+					svnUserGroups = resp;
+
+				}else if(resp["@nil"]==null){
+					svnUserGroups.push(resp);
+				}
+			}
+			////////////jira///////////
+
+			var jiraUserGroupsTemp = getUserGroups(mail);
+			var jiraUserGroups=[];
+			for(var i=0;i<jiraUserGroupsTemp.length;i++){
+				jiraUserGroups.push(jiraUserGroupsTemp[i].name);
+			}
+
+			////////////mailman/////////////
+			url  = config.services.mailman;
+			data = {
+				"application": "mailman","operation":"getMemberSubsciptions","content":{
+				"subscriber":mail}
+			};
+			ldapJson = post(url, stringify(data) ,optionalHeaders);
+			var parsed = JSON.parse(ldapJson.data);
+			var entries =parsed.entries;
+
+			var mailUserGroups=[];
+
+			if(entries!=null){
+				for(var i=0;i<entries.length;i++){
+					mailUserGroups.push(entries[i].list_id);
+				}
+			}
+
+
+			//////////Docs/////////////////////////
+			url  = config.services.docs;
+			data = {
+				"application": "docs","operation":"getUserGroups","content":{
+				"username":mail}
+			};
+			ldapJson = post(url, stringify(data) ,optionalHeaders);
+			var entries = parse(ldapJson.data).getUserGroupsResponse.getUserGroupsReturn.getUserGroupsReturn;
+			var docsUserGroups=[];
+
+			if(entries!=null){
+				if(entries instanceof Array){
+					for(var i=0;i<entries.length;i++){
+						docsUserGroups.push(entries[i]["$"]);
+					}
+				}else{
+					docsUserGroups.push(entries["$"]);
+				}
+			}
+
+			//print(docsUserGroups);
+			%>
+			
+			<%
+	var roles = getRoles(mail);
+	
+	//print("<br/><br/>roles"+roles);
+
+	%>
+			
+			
+		<h2>Do you want to delete user <%print(mail);%>?</h2>
+		<br />
+
+		<table>
+			<tr>
+				<td><input type="button" value="No" onclick="" style="width: 80px">
+				</td>
+				<td><input type="button" value="Yes" onclick="deleteUser()"
+					style="width: 80px"></td>
+
+			</tr>
+
+		</table>
+
+
+		<hr>
+		<p>dimuthuu has been in following groups. It will remove all accounts
+			from following applications</p>
+		<br /> <br />
+		<table>
+			<tbody>
+				<tr>
+					<td style="width: 150px">LDAP Roles</td>
+					<td></td>
+					<td></td>
+				</tr>
+				<%for(var i=0;i<roles.length;i++){%>
+				<tr>
+					<td></td>
+					<td><%print(roles[i]);%></td>
+					<td style="vertical-align: middle;"></td>
+				</tr>
+				<%}%>
+				
+			</tbody>
+		</table>
+		<hr>
+		Assigned Groups <br /> <br />
+		<table>
+			<tr>
+				<td style="width: 150px">JIRA</td>
+				<td></td>
+			</tr>
+			<%for(var i=0;i<jiraUserGroups.length;i++){%>
+			<tr>
+				<td></td>
+				<td><%print(jiraUserGroups[i]);%></td>
+			</tr>
+			<%}
+			%>
+
+		</table>
+		<hr/>
+		<table>
+			<tr>
+				<td>SVN</td>
+				<td></td>
+			</tr>
+			<%for(var i=0;i<svnUserGroups.length;i++){%>
+			<tr>
+				<td></td>
+				<td><%print(svnUserGroups[i]);%></td>
+			</tr>
+			<%}
+			%>
+		</table>
+		<hr/>
+		<table>
+			<tr>
+				<td>Docs</td>
+				<td></td>
+			</tr>
+			<%for(var i=0;i<docsUserGroups.length;i++){%>
+			<tr>
+				<td></td>
+				<td><%print(docsUserGroups[i]);%></td>
+			</tr>
+			<%}
+			%>
+		</table>
+		<hr/>
+		<table>
+			<tr>
+				<td>Mailman</td>
+				<td></td>
+			</tr>
+			<%for(var i=0;i<mailUserGroups.length;i++){%>
+			<tr>
+				<td></td>
+				<td><%print(mailUserGroups[i]);%></td>
+			</tr>
+			<%}
+			%>
+
+		</table>
+	</div>
+
+</div>
+<script type="text/javascript">
+	function deleteUser(){
+		window.location.replace("../../controller/user_management/deleteLDAPUser.jag?mail=<%print(mail);%>");
+	}
+</script>
+<%
+	}else{
+		print("Permission denied");
+	}
+}
+include('../../includes/footer.jag');
+%>

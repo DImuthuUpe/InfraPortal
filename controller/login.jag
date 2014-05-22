@@ -1,0 +1,29 @@
+<%
+var config = require('../config.json');
+
+var url  = config.services.ldap;
+var mail= request.getParameter("mail");
+var password= request.getParameter("password");
+var data = {
+	"application": "ldap","operation": "searchEntity","content":{
+	"objectClass": "inetOrgPerson",
+	"dn":"ou=staff,dc=wso2,dc=com",
+	"attributes":"uid,mail,givenName,displayName",
+	"filters":"mail="+mail+",userPassword="+password}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var entries = parse(ldapJson.data).result;
+
+		
+		if(entries!=null){
+			entries = entries.entry;
+			response.sendRedirect("../home.jag");
+			session.put("user",{"mail":mail})
+		}else{
+			response.sendRedirect("../login.jag");
+		}
+
+	
+	%>

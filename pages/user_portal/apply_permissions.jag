@@ -1,0 +1,276 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+var config = require('../../config.json');
+var user = session.get("user");
+if(user==null){
+	response.sendRedirect("../../login.jag");
+}else{
+	include('../../controller/jira/controller.jag');
+	%>
+<%
+var url  = config.services.svn;
+var data = {
+	"application": "svn","operation": "getUserGroupList","content":{
+	"mail":user.mail}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+
+	//////////////svn//////////
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	//print(ldapJson);
+	var resp = parse(ldapJson.data).getUserGroupListResponse.return;
+	var svnUserGroups =[];
+	if(resp!=null){
+		if(resp instanceof Array){
+			svnUserGroups = resp;
+
+		}else if(resp["@nil"]==null){
+			svnUserGroups.push(resp);
+		}
+	}
+	////////////jira///////////
+
+	var jiraUserGroupsTemp = getUserGroups(user.mail);
+	var jiraUserGroups=[];
+	for(var i=0;i<jiraUserGroupsTemp.length;i++){
+		jiraUserGroups.push(jiraUserGroupsTemp[i].name);
+	}
+
+	////////////mailman/////////////
+	url  = config.services.mailman;
+	data = {
+		"application": "mailman","operation":"getMemberSubsciptions","content":{
+		"subscriber":user.mail}
+	};
+	ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var parsed = JSON.parse(ldapJson.data);
+	var entries =parsed.entries;
+
+	var mailUserGroups=[];
+
+	if(entries!=null){
+		for(var i=0;i<entries.length;i++){
+			mailUserGroups.push(entries[i].list_id);
+		}
+	}
+
+
+	//////////Docs/////////////////////////
+	url  = config.services.docs;
+	data = {
+		"application": "docs","operation":"getUserGroups","content":{
+			"username":user.mail}
+	};
+	ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var entries = parse(ldapJson.data).getUserGroupsResponse.getUserGroupsReturn.getUserGroupsReturn;
+	var docsUserGroups=[];
+
+	if(entries!=null){
+		if(entries instanceof Array){
+			for(var i=0;i<entries.length;i++){
+				docsUserGroups.push(entries[i]["$"]);
+			}
+		}else{
+			docsUserGroups.push(entries["$"]);
+		}
+	}
+
+	//print(docsUserGroups);
+	%>
+
+<h2>Apply permissions</h2>
+<div id="lightbox"></div>
+<div
+	id="lightbox-shadow" onclick="closeLightbox()"></div>
+
+
+<div id="workArea">
+	<br />
+	<hr />
+	<table>
+		<tr>
+			<td style="width: 200px"><h3>Jira Permissions</h3></td>
+			<td><input type="button" value="Add/Remove premission requests"
+				onclick="lightbox('','jiraPermission.jag')" /></td>
+		</tr>
+
+	</table>
+	<br />
+	<table id="jiraTable"></table>
+	<br />
+
+	<hr />
+	<table>
+		<tr>
+			<td style="width: 200px"><h3>Docs Permissions</h3></td>
+			<td><input type="button" value="Add/Remove premission requests"
+				onclick="lightbox('','docsPermission.jag')" /></td>
+		</tr>
+
+	</table>
+	<br />
+	<table id="docsTable">
+	</table>
+	<br />
+
+	<hr />
+	<table>
+		<tr>
+			<td style="width: 200px"><h3>SVN Permissions</h3></td>
+			<td><input type="button" value="Add/Remove premission requests"
+				onclick="lightbox('','svnPermission.jag')" /></td>
+		</tr>
+
+	</table>
+	<br />
+	<table id="svnTable"></table>
+	<br />
+
+	<hr />
+	<table>
+		<tr>
+			<td style="width: 200px"><h3>Mailman Permissions</h3></td>
+			<td><input type="button" value="Add/Remove premission requests"
+				onclick="lightbox('','mailPermission.jag')" /></td>
+		</tr>
+
+	</table>
+	<br />
+	<table id="mailTable">
+
+	</table>
+	<br />
+	<form action="../../controller/user_portal/add_notification.jag"
+		method="post" onclick="onSubmitClicked()">
+
+		<input type="hidden" id="svn" name="svn" /> <input type="hidden"
+			id="jira" name="jira" /> <input type="hidden" id="docs" name="docs" />
+		<input type="hidden" id="mail" name="mail" /> <input type="submit"
+			value="Apply" />
+
+	</form>
+</div>
+
+<script type="text/javascript">
+
+	//for svn
+var svnAvlPermissions=<%print(stringify(svnUserGroups));%>
+var jiraAvlPermissions = <%print(stringify(jiraUserGroups));%>
+var mailAvlPermissions = <%print(stringify(mailUserGroups));%>
+var docsAvlPermissions = <%print(stringify(docsUserGroups));%>
+
+var svnRequestAddPermissions=[];
+var jiraRequestAddPermissions=[];
+var mailRequestAddPermissions=[];
+var docsRequestAddPermissions=[];
+
+function lightbox(insertContent, ajaxContentUrl){
+
+	// add lightbox/shadow <div/>'s if not previously added
+	if($('#lightbox').size() == 0){
+		var theLightbox = $('<div id="lightbox"/>');
+		var theShadow = $('<div id="lightbox-shadow"/>');
+		$(theShadow).click(function(e){
+			closeLightbox();
+		});
+		$('body').append(theShadow);
+		$('body').append(theLightbox);
+	}
+
+	// remove any previously added content
+	$('#lightbox').empty();
+
+	// insert HTML content
+	if(insertContent != null){
+		$('#lightbox').append(insertContent);
+	}
+
+	// insert AJAX content
+	if(ajaxContentUrl != null){
+		// temporarily add a "Loading..." message in the lightbox
+		$('#lightbox').append('<p class="loading">Loading...</p>');
+
+		// request AJAX content
+		$.ajax({
+			type: 'GET',
+			url: ajaxContentUrl,
+			success:function(data){
+				// remove "Loading..." message and append AJAX content
+				$('#lightbox').empty();
+				$('#lightbox').append(data);
+			},
+			error:function(){
+				alert('AJAX Failure!');
+			}
+		});
+	}
+
+	// move the lightbox to the current window top + 100px
+	$('#lightbox').css('top', $(window).scrollTop() + 100 + 'px');
+
+	// display the lightbox
+	$('#lightbox').show();
+	$('#lightbox-shadow').show();
+	
+}
+
+// close the lightbox
+function closeLightbox(){
+
+	// hide lightbox and shadow <div/>'s
+	$('#lightbox').hide();
+	$('#lightbox-shadow').hide();
+
+	// remove contents of lightbox in case a video or other content is actively playing
+	$('#lightbox').empty();
+}
+
+function onSubmitClicked(){
+	document.getElementById("svn").value = JSON.stringify(svnRequestAddPermissions);
+	document.getElementById("jira").value = JSON.stringify(jiraRequestAddPermissions);
+	document.getElementById("mail").value = JSON.stringify(mailRequestAddPermissions);
+	document.getElementById("docs").value = JSON.stringify(docsRequestAddPermissions);
+	
+}
+
+function update(param){
+	if(param=='svn'){
+		var table = document.getElementById("svnTable");
+		table.innerHTML="";
+		for(var i=0; i<svnRequestAddPermissions.length;i++){
+			table.innerHTML+="<tr><td>"+svnRequestAddPermissions[i]+"</td></tr>";
+		}
+		
+	}else if(param=='jira'){
+		var table = document.getElementById("jiraTable");
+		table.innerHTML="";
+		for(var i=0; i<jiraRequestAddPermissions.length;i++){
+			table.innerHTML+="<tr><td>"+jiraRequestAddPermissions[i]+"</td></tr>";
+		}
+		
+	}else if(param=='mail'){
+		var table = document.getElementById("mailTable");
+		table.innerHTML="";
+		for(var i=0; i<mailRequestAddPermissions.length;i++){
+			table.innerHTML+="<tr><td>"+mailRequestAddPermissions[i]+"</td></tr>";
+		}
+		
+	}else if(param=='docs'){
+		var table = document.getElementById("docsTable");
+		table.innerHTML="";
+		for(var i=0; i<docsRequestAddPermissions.length;i++){
+			table.innerHTML+="<tr><td>"+docsRequestAddPermissions[i]+"</td></tr>";
+		}
+		
+	}
+}
+
+
+</script>
+
+<%
+include('../../includes/footer.jag');
+}
+%>

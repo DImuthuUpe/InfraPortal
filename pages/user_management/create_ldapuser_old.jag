@@ -1,0 +1,459 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+
+
+var config = require('../../config.json');
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+		
+	
+%>
+
+<div id="middle">
+
+	<h2>Infra Portal Create User</h2>
+	<div id="lightbox"></div>
+	<div id="lightbox-shadow" onclick="closeLightbox()"></div>
+
+	<%var url  = config.services.ldap;
+	var data = {
+		"application": "ldap","operation": "searchEntity",
+		"content":{
+		"objectClass": "groupOfNames",
+		"dn":"ou=groups,dc=wso2,dc=com",
+		"attributes":"cn,member","filters":""}
+	};
+	var optionalHeaders = {
+		"Content-Type": "application/json","Accept":"application/json"};
+		var ldapJson = post(url, stringify(data) ,optionalHeaders);
+
+		var entries = parse(ldapJson.data).result.entry;
+		//print(entries);
+
+		%>
+
+	<div id="workArea">
+		<form
+			action="../../controller/user_management/createLDAPUser.jag"
+			method="post">
+			<table>
+				<tbody>
+					<tr>
+						<td style="width: 150px">UID *</td>
+						<td><input name=uid style="width: 150px" type="text" /></td>
+					
+					</tr>
+
+					<tr>
+						<td>Password *</td>
+						<td><input name="password" style="width: 150px" type="password" /></td>
+					
+					</tr>
+
+					<tr>
+						<td>Email *</td>
+						<td><input name="mail" style="width: 150px" type="text" /></td>
+					
+					</tr>
+
+					<tr>
+						<td>Given Name</td>
+						<td><input name="givenName" style="width: 150px" type="text" /></td>
+					
+					</tr>
+
+					<tr>
+						<td>Display Name</td>
+						<td><input name="displayName" style="width: 150px" type="text" /></td>
+					
+					</tr>
+					<tr>
+						<td>SN *</td>
+						<td><input name="sn" style="width: 150px" type="text" /></td>
+					
+					</tr>
+
+					<tr>
+						<td>CN *</td>
+						<td><input name="cn" style="width: 150px" type="text" /></td>
+					
+					</tr>
+
+
+					<tr>
+						<td>Mobile</td>
+						<td><input name="mobile" style="width: 150px" type="text" /></td>
+					
+					</tr>
+
+					<tr>
+						<td>Object Class</td>
+						<td>inetOrgPerson<input name="inetOrgPerson" checked="checked" disabled="disabled" style="width: 150px" type="checkbox"/></td>
+					
+					</tr>
+					<tr>
+						<td></td>
+						<td>organizationalPerson<input name="organizationalPerson" style="width: 150px" type="checkbox"/></td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>person<input name="person" style="width: 150px" type="checkbox"/></td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>top<input name="top" style="width: 150px" type="checkbox"/></td>
+					</tr>
+				</tbody>
+			</table>
+			<hr>
+			<table>
+
+				<tbody>
+					<tr>
+						<td style="width: 150px">Add roles</td>
+						<td></td>
+						<td></td>
+					</tr>
+
+					<tr>
+						<td></td>
+						<td><select id="0" onchange="roleOnChange(this)">
+
+								<option value="Add role">Add role</option>
+								<%for(var i=0;i<entries.length;i++){%>
+								<option value="<%print(entries[i].cn);%>"><%print(entries[i].cn);%></option>
+								<%}
+								%>
+
+						</select></td>
+						<td style="vertical-align: middle;"><input type="button" id='btn0'
+							onclick="removeCombo(this)"
+							style="background-image: url('../../images/icons/bullet_cross.png');">
+						</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<hr>
+			<p>Create accounts in</p>
+			<br />
+			<table>
+				<tr>
+					<td style="width: 150px">JIRA</td>
+					<td><input name="chkJira" type="checkbox" onclick="onChkClickJira(this)" checked="checked"/></td>
+					<td><input type="button" value="Add groups" id="btnJira"
+						onclick="createJiraGroupList()" style="width: 80px" />
+					</td>
+				</tr>
+				<tr>
+					<td>SVN</td>
+					<td><input name="chkSvn" type="checkbox" onclick="onChkClickSvn(this)" checked="checked"/></td>
+					<td><input type="button" value="Add groups" id="btnSvn"
+						onclick="createSvnGroupList()" style="width: 80px" />
+					</td>
+				</tr>
+				<tr>
+					<td>Docs</td>
+					<td><input name="chkDocs" type="checkbox" onclick="onChkClickDocs(this)" checked="checked"/></td>
+					<td><input type="button" value="Add groups" id="btnDocs"
+						onclick="createDocsGroupList()" style="width: 80px" />
+					</td>
+				</tr>
+				<tr>
+					<td>Mailman</td>
+					<td><input name="chkMailman" type="checkbox" onclick="onChkClickMail(this)" checked="checked"/></td>
+					<td><input type="button" value="Add lists" id="btnMail"
+						onclick="createMailGroupList()"
+						style="width: 80px" /></td>
+				</tr>
+
+				<tr>
+					<td><br /> <input type="submit" onclick="bindRoles()"
+						value="Create User" />
+					</td>
+				</tr>
+			</table>
+			<input type="hidden" name="roles" id="roles" value="" />
+			<input type="hidden" name="svnList" id="svnList" value=""/>
+			<input type="hidden" name="mailList" id="mailList" value=""/>
+			<input type="hidden" name="docsList" id="docsList" value=""/>
+			<input type="hidden" name="jiraList" id="jiraList" value=""/> 
+		</form>
+
+	</div>
+</div>
+<script type="text/javascript">
+var svnGroups =<%print(config.gorups.svn);%>;//{role1:[grp1,grp2]}
+var jiraGroups =<%print(config.gorups.jira);%>;//{role1:[grp1,grp2]}
+var docsGroups =<%print(config.gorups.docs);%>;//{role1:[grp1,grp2]}
+var mailGroups =<%print(config.gorups.mailman);%>;//{role1:[grp1,grp2]}
+
+var svnGroupAddList = {};//{grp1:true,grp2:true}
+var jiraGroupAddList = {};
+var docsGroupAddList = {};
+var mailGroupAddList = {};
+
+var svnEditted=false;
+var jiraEditted=false;
+var docsEditted=false;
+var mailEditted=false;
+
+function createSvnGroupList(){
+	for(keys in roles){
+		if(roles[keys]!="Add role"&&roles[keys]!="deleted"&&!svnEditted){
+			
+			//alert(roles[keys]);
+			
+			if(svnGroups!=null){
+				var groups = svnGroups[roles[keys]];
+				if(groups!=null){
+					//alert(groups.length);
+					
+					for(var i=0;i<groups.length;i++){
+						//alert(i);
+						svnGroupAddList[groups[i]]=true;		
+					}
+				}
+			}
+			
+		}
+	}
+	svnEditted=true;
+	lightbox('','./svnPermission.jag');
+}
+
+function createJiraGroupList(){
+	for(keys in roles){
+		if(roles[keys]!="Add role"&&roles[keys]!="deleted"&&!jiraEditted){
+			
+			//alert(roles[keys]);
+			
+			if(jiraGroups!=null){
+				var groups = jiraGroups[roles[keys]];
+				if(groups!=null){
+					//alert(groups.length);
+					
+					for(var i=0;i<groups.length;i++){
+						//alert(i);
+						jiraGroupAddList[groups[i]]=true;		
+					}
+				}
+			}
+			
+		}
+	}
+	jiraEditted=true;
+	lightbox('','./jiraPermission.jag');
+}
+
+function createDocsGroupList(){
+	for(keys in roles){
+		if(roles[keys]!="Add role"&&roles[keys]!="deleted"&&!docsEditted){
+			
+			//alert(roles[keys]);
+			
+			if(docsGroups!=null){
+				var groups = docsGroups[roles[keys]];
+				if(groups!=null){
+					//alert(groups.length);
+					
+					for(var i=0;i<groups.length;i++){
+						//alert(i);
+						docsGroupAddList[groups[i]]=true;		
+					}
+				}
+			}
+			
+		}
+	}
+	docsEditted=true;
+	lightbox('','./docsPermission.jag');
+}
+
+function createMailGroupList(){
+	for(keys in roles){
+		if(roles[keys]!="Add role"&&roles[keys]!="deleted"&&!mailEditted){
+			
+			//alert(roles[keys]);
+			
+			if(mailGroups!=null){
+				var groups = mailGroups[roles[keys]];
+				if(groups!=null){
+					//alert(groups.length);
+					
+					for(var i=0;i<groups.length;i++){
+						//alert(i);
+						mailGroupAddList[groups[i]]=true;		
+					}
+				}
+			}
+			
+		}
+	}
+	mailEditted=true;
+	lightbox('','./mailmanPermission.jag');
+}
+
+
+function lightbox(insertContent, ajaxContentUrl){
+
+	// add lightbox/shadow <div/>'s if not previously added
+	if($('#lightbox').size() == 0){
+		var theLightbox = $('<div id="lightbox"/>');
+		var theShadow = $('<div id="lightbox-shadow"/>');
+		$(theShadow).click(function(e){
+			closeLightbox();
+		});
+		$('body').append(theShadow);
+		$('body').append(theLightbox);
+	}
+
+	// remove any previously added content
+	$('#lightbox').empty();
+
+	// insert HTML content
+	if(insertContent != null){
+		$('#lightbox').append(insertContent);
+	}
+
+	// insert AJAX content
+	if(ajaxContentUrl != null){
+		// temporarily add a "Loading..." message in the lightbox
+		$('#lightbox').append('<p class="loading">Loading...</p>');
+
+		// request AJAX content
+		$.ajax({
+			type: 'GET',
+			url: ajaxContentUrl,
+			success:function(data){
+				// remove "Loading..." message and append AJAX content
+				$('#lightbox').empty();
+				$('#lightbox').append(data);
+			},
+			error:function(){
+				alert('AJAX Failure!');
+			}
+		});
+	}
+
+	// move the lightbox to the current window top + 100px
+	$('#lightbox').css('top', $(window).scrollTop() + 100 + 'px');
+
+	// display the lightbox
+	$('#lightbox').show();
+	$('#lightbox-shadow').show();
+
+}
+
+// close the lightbox
+function closeLightbox(){
+
+	// hide lightbox and shadow <div/>'s
+	$('#lightbox').hide();
+	$('#lightbox-shadow').hide();
+
+	// remove contents of lightbox in case a video or other content is actively playing
+	$('#lightbox').empty();
+}
+var comboId = 0;
+
+function addRoleCombo(elem){
+	comboId++;
+	//alert(elem.id);	
+	var newCombo='<tr><td></td><td><select id='+comboId+' onchange="roleOnChange(this)"><option value="Add role">Add role</option><%for(var i=0;i<entries.length;i++){%><option value="<%print(entries[i].cn);%>"><%print(entries[i].cn);%></option><%}%></select></td><td style="vertical-align: middle;"><input type="button" id='+'btn'+comboId+' onclick="removeCombo(this)" style="background-image:url(\'../../images/icons/bullet_cross.png\'); "> </td></tr>';
+	var parentElem = elem.parentElement.parentElement.parentElement;
+    parentElem.innerHTML= parentElem.innerHTML+newCombo;
+}
+var roles={0:'Add role'};
+function roleOnChange(elem){
+	roles[elem.id]=elem.value;
+	//alert((elem.id*1+1*1));
+	var lastOne = true;
+	var counter=1;	
+	while(roles[elem.id*1+counter*1]!=null){
+		if(roles[elem.id*1+counter*1]!="deleted"){
+			lastOne = false;
+			break;
+		}
+		counter++;
+		
+	}
+	
+	if(lastOne){
+		roles[comboId*1+1*1]="Add role";
+		addRoleCombo(elem);
+		
+	}
+
+	for(var i=0;i<=comboId;i++){
+		if(roles[i]!="deleted"){
+			document.getElementById(i).value=roles[i];
+		}
+	}
+}
+
+function removeCombo(elem){
+	var parentElem = elem.parentElement.parentElement;
+	parentElem.innerHTML="";
+	btnid=elem.id;
+	var selectedId=btnid.substr(3,btnid.length);
+	roles[selectedId]="deleted";
+	
+}
+
+function bindRoles(){
+	var roleString="";
+	var start=true;
+	for(var i=0;i<=comboId;i++){
+		if(roles[i]!="deleted"&&roles[i]!="Add role"){
+			if(start){
+				roleString+=roles[i];
+				start=false;
+			}else{
+				roleString+=","+roles[i];
+			}
+		}
+	}
+	//alert(roleString);
+	document.getElementById("roles").value=roleString;
+
+	document.getElementById("svnList").value=JSON.stringify(svnGroupAddList);
+	document.getElementById("jiraList").value=JSON.stringify(jiraGroupAddList);
+	document.getElementById("mailList").value=JSON.stringify(mailGroupAddList);
+	document.getElementById("docsList").value=JSON.stringify(docsGroupAddList);
+}
+
+function onChkClickJira(elem){
+	document.getElementById("btnJira").disabled=!elem.checked;	
+}
+
+function onChkClickSvn(elem){
+	document.getElementById("btnSvn").disabled=!elem.checked;	
+}
+
+function onChkClickDocs(elem){
+	document.getElementById("btnDocs").disabled=!elem.checked;	
+}
+
+function onChkClickMail(elem){
+	document.getElementById("btnMail").disabled=!elem.checked;	
+}
+
+</script>
+<%
+	}
+}
+include('../../includes/footer.jag');
+%>

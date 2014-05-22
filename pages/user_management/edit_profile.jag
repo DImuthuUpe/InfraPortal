@@ -1,0 +1,126 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+
+var config = require('../../config.json');
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = true;
+	if(access){
+
+		%>
+<%
+var user = session.get("user");
+if(user!=null){
+	var mail = user.mail;
+	var url  = config.services.ldap;
+	var data = {
+		"application": "ldap","operation": "searchEntity","content":{
+		"objectClass": "inetOrgPerson",
+		"dn":"ou=staff,dc=wso2,dc=com",
+		"attributes":"uid,mail,givenName,displayName,homePhone",
+		"filters":"mail="+mail}
+	};
+	var optionalHeaders = {
+		"Content-Type": "application/json","Accept":"application/json"};
+		var ldapJson = post(url, stringify(data) ,optionalHeaders);
+		//print(ldapJson);
+		var userEntry = JSON.parse(ldapJson.data).result.entry;
+
+		%>
+<div id="middle">
+
+	<h2>Infra Portal Edit User</h2>
+	<div id="lightbox"></div>
+	<div id="lightbox-shadow" onclick="closeLightbox()"></div>
+
+
+	<div id="workArea">
+		<form
+			action="../../controller/user_management/edit_profile.jag"
+			method="post">
+			<table>
+				<input type="hidden" name="dn" value="<%print(userEntry.dn);%>" />
+				<tbody>
+					<tr>
+						<td style="width: 150px">UID *</td>
+						<td><%print(userEntry.uid);%></td>
+
+					</tr>
+
+					<tr>
+						<td>Password *<input type="checkbox" name="pwEnable" id="pwEnable"
+							onclick="enablePwd(this)">
+						</td>
+						<td><input style="width: 150px" type="password" value=""
+							id="password" name="password" disabled="true" /></td>
+
+					</tr>
+					<tr>
+						<td>Confirm Password *</td>
+						<td><input style="width: 150px" type="password" value=""
+							id="confPass" disabled="true" /></td>
+
+					</tr>
+
+					<tr>
+						<td>Email *</td>
+						<td><input style="width: 150px" type="text" name="mail"
+							value="<%print(userEntry.mail);%>" /></td>
+
+					</tr>
+
+					<tr>
+						<td>Given Name</td>
+						<td><input style="width: 150px" type="text" name="givenName"
+							value="<%print(userEntry.givenName);%>" /></td>
+
+					</tr>
+
+					<tr>
+						<td>Display Name</td>
+						<td><input style="width: 150px" type="text" name="displayName"
+							value="<%print(userEntry.displayName);%>" /></td>
+
+					</tr>
+
+
+
+					<tr>
+						<td>Mobile</td>
+						<td><input style="width: 150px" type="text"
+							value="<%print(userEntry.homePhone);%>" name="mobile" />
+						</td>
+
+					</tr>
+
+				</tbody>
+			</table>
+			<table>
+				<tr>
+					<td><br /> <input type="submit" value="Save Changes" />
+					</td>
+					<td><br /> <input type="button" value="Discard Changes" />
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+</div>
+<script type="text/javascript">
+	function enablePwd(elem){
+		document.getElementById("password").disabled=!elem.checked;
+		document.getElementById("confPass").disabled=!elem.checked;
+		
+	}
+</script>
+
+<%
+}
+	}
+}
+include('../../includes/footer.jag');
+%>

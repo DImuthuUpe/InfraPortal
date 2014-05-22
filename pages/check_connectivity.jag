@@ -1,0 +1,175 @@
+
+<%
+var baseAt="..";
+include('../includes/header.jag');
+var config = require('../config.json');
+%>
+
+<%
+function printRow(name,isconnected){
+	if(isconnected){
+	%>
+	<tr><td width="100"><%print(name);%>:</td><td><img alt="connected" src="../images/icons/bullet_tick.png"></td><td width="10"></td><td><b>connected</b></td></tr>
+	<%
+	}else{
+	%>
+	<tr><td width="100"><%print(name);%>:</td><td><img alt="not connected" src="../images/icons/bullet_cross.png"></td><td width="10"></td><td><b>not connected</b></td></tr>
+	<%
+	}
+}
+%>
+
+<div id="middle">
+
+	<h2>Connection Status with cloud connectors</h2>
+
+	<p>Infra Portal uses cloud connectors to connect to LDAP,JIRA,Confluence Docs and Mailman.</p>
+
+	<p>&nbsp;</p>
+
+	<div id="workArea">
+	<table border="1">
+	<thead></thead>
+	<tbody>
+		
+		<%
+		
+		var url  = config.services.svn;
+		var data = {"application": "svn","operation": "getGroupList","content":{}};
+		var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+		var respStr =null;
+		try{
+			respStr = post(url, stringify(data) ,optionalHeaders);
+		}catch (err){
+			
+		}
+		if(respStr!=null){
+			if(respStr.data!=null){
+				var data = JSON.parse(respStr.data);
+				if(data.getGroupListResponse!=null){
+					printRow("SVN",true);
+				}else{
+					printRow("SVN",false);
+				}
+			}else{
+				printRow("SVN",false);
+			}
+		}else{
+			printRow("SVN",false);
+		}
+		
+		
+		url  = config.services.jira;
+		data = {"application": "jira","operation": "getGroups","content":{}};
+		var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+		respStr =null;
+		try{
+			respStr = post(url, stringify(data) ,optionalHeaders);
+		}catch (err){
+			
+		}
+		if(respStr!=null){
+			if(respStr.data!=null){
+				var data = JSON.parse(respStr.data);
+				if(data.groups!=null){
+					printRow("JIRA",true);
+				}else{
+					printRow("JIRA",false);
+				}
+			}else{
+				printRow("JIRA",false);
+			}
+		}else{
+			printRow("JIRA",false);
+		}
+		
+		
+		
+		url  = config.services.docs;
+		data = {"application": "docs","operation": "getGroupList","content":{}};
+		var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+		respStr =null;
+		try{
+			respStr = post(url, stringify(data) ,optionalHeaders);
+		}catch (err){
+			
+		}
+		if(respStr!=null){
+			if(respStr.data!=null){
+				var data = JSON.parse(respStr.data);
+				if(data.getGroupsResponse!=null){
+					printRow("Docs",true);
+				}else{
+					printRow("Docs",false);
+				}
+			}else{
+				printRow("Docs",false);
+			}
+		}else{
+			printRow("Docs",false);
+		}
+		
+		
+		url  = config.services.mailman;
+		data = {"application": "mailman","operation": "getLists","content":{}};
+		var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+		respStr =null;
+		try{
+		respStr = post(url, stringify(data) ,optionalHeaders);
+		}catch (err){
+			
+		}
+		if(respStr!=null){
+			if(respStr.data!=null){
+				var data = JSON.parse(respStr.data);
+				if(data.entries!=null){
+					printRow("Mailman",true);
+				}else{
+					printRow("Mailman",false);
+				}
+			}else{
+				printRow("Mailman",false);
+			}
+		}else{
+			printRow("Mailman",false);
+		}
+		
+		
+		
+		
+		url  = config.services.ldap;
+		data = {"application": "ldap","operation": "searchEntity","content":{"objectClass": "inetOrgPerson","dn":"ou=staff,dc=wso2,dc=com","attributes":"uid,mail,givenName,displayName"}};
+		var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+		respStr =null;
+		try{
+			respStr = post(url, stringify(data) ,optionalHeaders);
+		}catch (err){
+
+		}
+		if(respStr!=null){
+			if(respStr.data!=null){
+				var data = JSON.parse(respStr.data);
+				
+				if(data.result!=null){
+					
+					printRow("LDAP",true);
+				}else{
+					printRow("LDAP",false);
+				}
+			}else{
+				printRow("LDAP",false);
+			}
+		}else{
+			printRow("LDAP",false);
+		}
+		
+		%>
+		</tbody>
+		</table>
+		<br>
+		<a href="./home.jag">Back to Home</a>
+	</div>
+</div>
+<%
+include('../includes/footer.jag');
+%>

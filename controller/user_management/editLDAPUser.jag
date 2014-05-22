@@ -1,0 +1,70 @@
+<%
+var config = require('../../config.json');
+var roles = request.getParameter("roles");
+var deletedRoles = request.getParameter("deletedRoles");
+var dn = request.getParameter("dn");
+
+
+var password = request.getParameter("password");
+var mail = request.getParameter("mail");
+var givenName = request.getParameter("givenName");
+var displayName = request.getParameter("displayName");
+var mobile = request.getParameter("mobile");
+var pwChk = request.getParameter("pwChk");
+
+var roleList=roles.split(",");
+var deleteList = deletedRoles.split(",");
+var url =config.services.ldap;
+var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+var data = {
+				"application": "ldap","operation": "updateEntity","content":{
+				"mode":"replace",
+				"dn":dn,
+				"attributes":"mail:"+mail+";givenName:"+givenName+";displayName:"+displayName+";homePhone:"+mobile}
+			};
+			
+if(pwChk=="on"){
+	data.content.attributes=data.content.attributes+";userPassword:"+password;
+}
+var ldapJson = post(url, stringify(data) ,optionalHeaders);	
+var success=true;
+//success = success&&(parse(ldapJson.data).result.message=="Success");	
+print(ldapJson);
+
+if(roleList instanceof Array){
+	
+	
+		print("Array");
+		for(var i=0;i<roleList.length;i++){
+				
+			data = {
+				"application": "ldap","operation": "updateEntity","content":{
+				"mode":"add",
+				"dn":"cn="+roleList[i]+",ou=groups,dc=wso2,dc=com",
+				"attributes":"member:"+dn}
+			};
+
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			//success = success&&(parse(ldapJson.data).result.message=="Success");
+			print(ldapJson);
+		}
+
+		for(var i=0;i<deleteList.length;i++){
+
+			data = {
+				"application": "ldap","operation": "updateEntity","content":{
+				"mode":"remove",
+				"dn":"cn="+deleteList[i]+",ou=groups,dc=wso2,dc=com",
+				"attributes":"member:"+dn}
+			};
+
+			var ldapJson = post(url, stringify(data) ,optionalHeaders);
+			//success = success&&(parse(ldapJson.data).result.message=="Success");
+			print(ldapJson);
+		}
+}
+
+print(roles);
+response.sendRedirect("../../pages/user_management/edit_user.jag?mail="+mail);
+
+%>

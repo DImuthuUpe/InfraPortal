@@ -1,0 +1,81 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+var config = require('../../config.json');
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){	
+%>
+
+<div id="workArea">
+
+	<div id="middle">
+		<h2>Mailman New Mailing List</h2>
+		<br />
+
+		<p>Creates a new Mailman Mailing List.</p>
+	</div>
+	<hr />
+	<br />
+	<div>
+		<table>
+			<tr>
+				<td>
+					<div>
+						<h4>Mailing List Name</h4>
+						<input type="text" id="name" style="width: 250px" />
+					</div>
+				</td>
+
+				<td></td>
+				<td width="40%"></td>
+			</tr>
+		</table>
+
+		<hr />
+		
+		
+		
+	</div>
+
+    <form action="../../controller/mail/add_group.jag" method="post">
+	
+	<input type ="hidden" name="groupName" id="groupName"/>
+	<input type="submit" onclick="submitClicked()" value="Create Group" />
+	</form>
+
+
+</div>
+
+<script type="text/javascript">
+
+	
+	function submitClicked(){
+		document.getElementById("groupName").value=document.getElementById("name").value;
+		
+	}
+</script>
+
+
+<%
+
+	}else {
+		showPermissionDenied();
+	}
+
+}
+%>
+
+
+<%
+include('../../includes/footer.jag');
+%>

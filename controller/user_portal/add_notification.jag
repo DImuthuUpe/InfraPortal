@@ -1,0 +1,95 @@
+<%
+var svnData = request.getParameter('svn');
+var jiraData = request.getParameter('jira');
+var mailData = request.getParameter('mail');
+var docsData = request.getParameter('docs');
+
+var svnAddGroups = JSON.parse(svnData);
+var jiraAddGroups = JSON.parse(jiraData);
+var mailAddGroups = JSON.parse(mailData);
+var docsAddGroups = JSON.parse(docsData);
+var user = session.get("user");
+if(user==null){
+	response.sendRedirect("../../login.jag");
+}else{
+	var notifications = require('../../notifications.json');
+	if(svnAddGroups !=null){
+		for(var i=0;i<svnAddGroups.length;i++){
+			//print(svnAddGroups[i]);
+			var data ={
+				"mail":user.mail,
+				"request":"SVN",
+				"group":svnAddGroups[i],
+				"date": getDate(),
+				"status" : "Not reviewed",
+				"comments" :""
+			};
+			notifications.notifications.push(data);
+		}
+	}
+
+	if(jiraAddGroups !=null){
+		for(var i=0;i<jiraAddGroups.length;i++){
+			//print(svnAddGroups[i]);
+			var data ={
+				"mail":user.mail,
+				"request":"JIRA",
+				"group":jiraAddGroups[i],
+				"date": getDate(),
+				"status" : "Not reviewed",
+				"comments" :""
+			};
+			notifications.notifications.push(data);
+		}
+	}
+
+	if(mailAddGroups !=null){
+		for(var i=0;i<mailAddGroups.length;i++){
+			//print(svnAddGroups[i]);
+			var data ={
+				"mail":user.mail,
+				"request":"Mailman",
+				"group":mailAddGroups[i],
+				"date": getDate(),
+				"status" : "Not reviewed",
+				"comments" :""
+			};
+			notifications.notifications.push(data);
+		}
+	}
+	
+	if(docsAddGroups !=null){
+			for(var i=0;i<docsAddGroups.length;i++){
+				//print(svnAddGroups[i]);
+				var data ={
+					"mail":user.mail,
+					"request":"Docs",
+					"group":docsAddGroups[i],
+					"date": getDate(),
+					"status" : "Not reviewed",
+					"comments" :""
+				};
+				notifications.notifications.push(data);
+			}
+		}
+	var file = new File('../../notifications.json');
+	file.open("w");
+	file.write(JSON.stringify(notifications));
+	file.close();
+	//print(notifications);
+	response.sendRedirect("../../pages/home.jag");
+
+}
+
+function getDate(){
+	var today = new Date();
+	var dd = today.getDate();
+	var mm = today.getMonth()+1; //January is 0!
+
+	var yyyy = today.getFullYear();
+	if(dd<10){
+		dd='0'+dd} if(mm<10){
+			mm='0'+mm} today = mm+'/'+dd+'/'+yyyy;
+			return today;
+}
+%>

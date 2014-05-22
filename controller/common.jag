@@ -1,0 +1,23 @@
+<%
+function showErrorDialog(title,message){
+	%>
+	<div>
+	<h3><%print(title);%></h3>
+	<br>
+	<p><%print(message);%></p>
+	</div>
+	<%
+}
+
+function showPermissionDenied(){
+
+	%>
+	<div>
+	<h3>Sorry, you do not have access to this resource.</h3>
+	<br>
+	<p>You need to have administrative priviledges to access this resource.</p>
+	</div>
+	<%
+}
+
+%>

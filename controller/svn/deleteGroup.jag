@@ -1,0 +1,22 @@
+<%
+	var config = require('../../config.json');
+	var groupId = request.getParameter("groupId");
+	
+	var url  = config.services.svn;
+	var data = {
+		"application": "svn","operation": "deleteGroup","content":{
+		"groupId":groupId}
+	};
+	var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	
+	var resp = parse(ldapJson.data).deleteGroupResponse.return;
+	
+	if(resp=="Success"){
+		print("Group Deleted");
+	}else{
+		print(resp);
+	}
+	response.sendRedirect("../../pages/group_management/group_list.jag#tabs|Product:svn");
+%>

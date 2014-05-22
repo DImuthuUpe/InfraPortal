@@ -1,0 +1,42 @@
+<%
+    var log = new Log("INFRA PORTAL");
+    var config = require('../../config.json');
+	
+	var groupName =  request.getParameter("groupName");
+	if(groupName!=null&&groupName!=""){
+	
+	var url  = config.services.mailman;
+	log.debug("REQUEST URL: "+url);
+	var data = {
+		"application": "mailman","operation": "createList","content":{
+		"fqdn_listname":groupName}
+	};
+	log.debug("REQUEST DATA: "+data);
+	var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	log.debug("RESPONSE DATA: "+ldapJson);
+	log.info("MAILMAN LIST CREATED: "+groupName);
+	log.debug("REQUEST URL: "+url);
+	var data = {
+	"application": "mailman","operation": "getListRecord","content":{
+	"fqdn_listnameOrlist_id":groupName}
+    };	
+    log.debug("REQUEST DATA: "+data);
+    var ldapJson = post(url, stringify(data) ,optionalHeaders);
+    log.debug("RESPONSE_DATA: "+ldapJson);
+    log.info("MAILMAN LIST RECORD ACQUIRED: "+groupName);
+    var resp = parse(ldapJson.data).text;
+    if(resp!="404 Not Found"){
+		print("Mailing List Created");
+		print(ldapJson);
+	}
+	response.sendRedirect("../../pages/group_management/group_list.jag#tabs|Product:mail");
+}else{
+	%>
+	<script type="text/javascript">
+		alert("Group name can not be empty");
+		window.location.replace("../../pages/home.jag");
+	</script>
+	<%
+}
+	%>

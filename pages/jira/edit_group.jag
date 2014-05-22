@@ -1,0 +1,402 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/jira/controller.jag');
+include('../../controller/common.jag');
+include('../../controller/user_management/controller.jag');
+var showpage=false;
+%>
+
+<%
+var groupname=request.getParameter("groupname");
+var projects=[];
+var roles=[];
+var senddata=[];
+
+var log=new Log();
+
+if(groupname==null){
+	groupname="jira-administrators";
+}
+
+try {
+
+	if(user!=null){
+	
+		var roleList = getRoles(user.mail);
+		for(var i=0;i<roleList.length;i++){
+			if(roleList[i]=="Admin"){
+				showpage=true;
+				break;
+			}
+		}
+	}
+	
+	if(showpage){
+		
+		projects=getAllProjects();
+		if (projects.length!=0) {
+			roles=getAllRoles(projects[0].key);
+		}
+		senddata=getProjectRolesOfGroup(groupname,projects,roles);
+	}else{
+		showPermissionDenied();
+	}
+	
+}catch (e){
+	showErrorDialog(e.title,e.details);
+	showpage=false;
+}
+
+
+%>
+
+<%
+if(showpage){
+%>
+
+
+<script type="text/javascript">
+var data=[];
+var projects=[];
+var roles=[];
+var groupname="<%print(groupname);%>";
+
+<%
+for (var i=0;i<senddata.length;i++){
+%>
+
+data.push(<%print(senddata[i]);%>);
+
+<%}%>
+
+<%
+for (var i=0;i<projects.length;i++){
+%>
+
+projects.push(<%print(projects[i]);%>);
+
+<%}%>
+
+<%
+for (var i=0;i<roles.length;i++){
+%>
+
+roles.push(<%print(roles[i]);%>);
+
+<%}%>
+
+	
+</script>
+
+<div id="workArea">
+	<div id="middle">
+		<h2>JIRA Edit Priviledges</h2>
+	<br/>
+</div>
+
+	<hr />
+	<br />
+	<div>
+		<table>
+			<tr>
+				<td>
+					<div>
+						<h4>Group Name</h4>
+						<input id="grpnametxt" type="text" style="width: 250px" value="<%print(groupname);%>"/>
+					</div>
+				</td>
+
+				<td></td>
+				<td width="40%">
+				<div>
+					<h4>&nbsp;</h4>
+					<input type="submit" onclick="refreshGroup()" value="Refresh" />
+				</div>
+				</td>
+			</tr>
+		</table>
+		
+		<hr/>	
+		<table>
+			<tr>
+				<td><br>
+					<h3>Role Settings</h3> <br>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<div>
+						<h4>Select Project</h4>
+						<select id="projlist" style="width: 200px">
+							<option>WSO2 ESB 8.1</option>
+							<option>WSO2 AS 2</option>
+						</select>
+					</div>
+				</td>
+
+				<td>
+					<div>
+						<h4>Select Role</h4>
+						<select id="rolelist" style="width: 200px">
+							<option>Administrator</option>
+							<option>Developer</option>
+							<option>User</option>
+						</select>
+					</div>
+				</td>
+				<td>
+					<div>
+						<br> <input type="submit" value="Add Role"
+							onclick="addRole()" />
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+
+	<br>
+
+
+	<table id="jirapermtable" class="styledLeft">
+		<thead>
+			<tr>
+				<th width="30%"><b>Project Name</b></th>
+				<th width="30%">Roles</th>
+				<th width="40%">Operations</th>
+			</tr>
+		</thead>
+		<tbody>
+		
+			<tr>
+				<td width="30%"></td>
+				<td width="30%"></td>
+				<td width="40%"></td>
+			</tr>
+			
+			<!-- 
+			<tr style="border-bottom-style: hidden; border-top-style: hidden;">
+				<td width="30%"></td>
+				<td width="30%">Developers</td>
+				<td width="40%"><a href=""><img src="../../images/icons/bullet_cross.png"> Delete</a></td>
+			</tr>
+			<tr style="border-top-style: hidden;">
+				<td width="30%"></td>
+				<td width="30%">Users</td>
+				<td width="40%"><a href=""><img src="../../images/icons/bullet_cross.png"> Delete</a></td>
+			</tr>
+
+			<tr>
+				<td width="30%">WSO2 AS 8.1</td>
+				<td width="30%">Developers</td>
+				<td width="40%"><a href=""><img src="../../images/icons/bullet_cross.png"> Delete</a></td>
+			</tr>
+			 -->
+			 
+			 
+		</tbody>
+	</table>
+	
+	<br/>
+	<form action="../../controller/jira/edit_permission_group.jag" method="post">
+	<input type ="hidden" name="addList" id="addList"/>
+	<input type ="hidden" name="deleteList" id="deleteList"/>
+	<input type ="hidden" name="groupName" id="groupName"/>
+	<input type="submit" onclick="submitData()" value="Edit Group" />
+	</form>
+
+
+
+</div>
+
+
+
+
+
+<script type="text/javascript">
+
+//console.log(JSON.stringify(projects));
+
+addCurrentGroupRoles();
+addProjectList();
+addRoleList();
+
+function addCurrentGroupRoles(){
+
+	var table=document.getElementById("jirapermtable");
+
+	for(var j=0 ; j<data.length ;j++){
+	
+		var item=data[j];
+		
+		
+		var row;
+		var roles=item.roles;
+		
+		for(var i=0 ;i<roles.length;i++){
+			row=table.insertRow(table.rows.length);
+			
+			if(i==0){
+				row.insertCell(0).innerHTML=item.projname;		
+			}else{
+				row.insertCell(0).innerHTML="";	
+			}
+			var rolenamecell=row.insertCell(1);
+			var opercell=row.insertCell(2);
+			if(item.roles[i].type=="-1"){
+				rolenamecell.innerHTML='<p style="color:red;opacity:0.5">'+item.roles[i].rolename+'</p>';
+				rolenamecell.bgColor="#F6CECE";
+				opercell.bgColor="#F6CECE";
+			}else if(item.roles[i].type=="+1"){
+				rolenamecell.innerHTML='<p style="color:green">'+item.roles[i].rolename+'</p>';			
+				rolenamecell.bgColor="#CEF6CE";
+				opercell.bgColor="#CEF6CE";
+			}else{
+				rolenamecell.innerHTML='<p>'+item.roles[i].rolename+'</p>';
+				
+			}
+			
+			opercell.innerHTML='<input type="button" id="'+3+'" onclick="removeRole('+j+','+i+')" style="background-image: url(\'../../images/icons/bullet_cross.png\');"></td>';
+ 		}
+		
+	}
+	
+}
+
+
+function addRoleList(){
+	var rolelist=document.getElementById("rolelist");
+	console.log(rolelist);
+
+	rolelist.innerHTML="";
+
+	for(var i=0;i<roles.length;i++){
+
+		var selitem=document.createElement("option");
+		selitem.text=roles[i].name;
+		rolelist.add(selitem);
+	}
+
+	
+}
+
+function addProjectList(){
+	var projlist=document.getElementById("projlist");
+	console.log(projlist);
+
+	projlist.innerHTML="";
+
+	for(var i=0;i<projects.length;i++){
+
+		var selitem=document.createElement("option");
+		selitem.text=projects[i].name;
+		projlist.add(selitem);
+	}
+
+}
+
+
+function clearTable(){
+	var table1=document.getElementById("jirapermtable");
+	var len=table1.rows.length;
+	
+	for(var i=2;i<len;i++){
+		table1.deleteRow(2);
+	}
+	//table.rows[1].innerHTML='<td width="30%"></td><td width="30%"></td><td width="40%"></td>';
+	
+}
+
+function removeRole(proji,rolei){
+	console.log(proji+" "+rolei);
+	if(data[proji].roles[rolei].type=="0" || data[proji].roles[rolei].type=="-1"){
+		data[proji].roles[rolei].type="-1";
+		console.log("marked as deleted :");
+		console.log(data[proji].roles[rolei]); 
+	}else{
+		data[proji].roles.splice(rolei,1);		
+	}
+	
+	clearTable();
+	addCurrentGroupRoles();
+}
+
+function addRole(){
+	var projindex=document.getElementById("projlist").selectedIndex;
+	var roleindex=document.getElementById("rolelist").selectedIndex;
+
+	console.log(projindex + " " + roleindex);
+
+	if(projindex>=0 && roleindex >=0){
+		var add=1;
+		var proji=-1;
+		for(var i=0;i<data.length;i++){
+			
+			if(data[i].projname==projects[projindex].name){
+				proji=i;
+				for(var j=0;j<data[i].roles.length;j++){
+					if(data[i].roles[j].rolename==roles[roleindex].name){
+						console.log(data[i].roles[j].name); //entry already exists
+						add=0; 
+					}
+				}	
+								
+			}
+			
+		}
+		if(add==1){ // entry not exist
+			if(proji==-1){  //project also not exist in the table
+				var item={"projname":projects[projindex].name,"projid":projects[projindex].id,"projkey":projects[projindex].key,"roles":[{"rolename":roles[roleindex].name, "roleid":roles[roleindex].id, "type":"+1"}]};
+				data.push(item);
+			}else{ //only project exist
+				data[proji].roles.push({"rolename":roles[roleindex].name, "roleid":roles[roleindex].id, "type":"+1"});		//then add role only		
+			}
+		}
+
+		clearTable();
+		addCurrentGroupRoles();
+		
+	}
+}
+
+
+function submitData(){
+
+	document.getElementById("groupName").value=groupname;
+	var addroles=[];
+	var deleteroles=[];
+	for(var i=0;i<data.length;i++){
+
+		for(var j=0;j<data[i].roles.length;j++){
+			if(data[i].roles[j].type=="+1"){
+				addroles.push({"projkey":data[i].projkey,"projid":data[i].projid,"roleid":data[i].roles[j].roleid});
+			}else if(data[i].roles[j].type=="-1"){
+				deleteroles.push({"projkey":data[i].projkey,"projid":data[i].projid,"roleid":data[i].roles[j].roleid});
+			}
+				
+		}
+	}
+	console.log(addroles);
+	console.log(deleteroles);
+	document.getElementById("addList").value=JSON.stringify(addroles);
+	document.getElementById("deleteList").value=JSON.stringify(deleteroles);
+	document.getElementById("groupName").value=groupname;
+}
+
+function refreshGroup(){
+	var grpname=document.getElementById("grpnametxt");
+	window.location.replace("../../pages/jira/edit_group.jag?groupname="+grpname.value);
+}
+
+</script>
+
+<%
+}
+%>
+
+
+<%
+
+//response.sendRedirect("../../login.jag");
+include('../../includes/footer.jag');
+%>

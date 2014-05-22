@@ -1,0 +1,27 @@
+<%
+var config = require('../../config.json');
+var groupName =  request.getParameter("groupName");
+if(groupName!=null&&groupName!=""){
+var url  = config.services.docs;
+var data = {
+	"application": "docs","operation": "createGroup","content":{
+	"groupId":groupName}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	
+	if(ldapJson!=null){
+			response.sendRedirect("../../pages/group_management/group_list.jag#tabs|Product:docs");
+		}else{
+			print("Failed!");
+		}
+}else{
+	%>
+	<script type="text/javascript">
+		alert("Group name can not be empty");
+		window.location.replace("../../pages/home.jag");
+	</script>
+	<%
+}
+	%>

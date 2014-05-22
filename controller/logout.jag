@@ -1,0 +1,4 @@
+<%
+session.put("user",null);
+response.sendRedirect("../login.jag");
+%>

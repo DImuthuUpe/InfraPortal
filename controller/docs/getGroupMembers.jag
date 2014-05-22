@@ -1,0 +1,40 @@
+<%
+var config = require('../../config.json');
+var groupId = request.getParameter("groupId");
+var url  = config.services.ldap;
+var resp = new Array();
+var data = {
+	"application": "ldap","operation": "searchEntity","content":{
+	"objectClass": "inetOrgPerson","dn":"ou=staff,dc=wso2,dc=com","attributes":"uid,mail,givenName,displayName"}
+};
+var optionalHeaders = {
+	"Content-Type": "application/json","Accept":"application/json"};
+	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	var entries = parse(ldapJson.data).result.entry;
+	for(var i=0;i<4;++i){
+		try{
+			var url  = config.services.docs;
+			var data = {
+				"application": "docs","operation": "getUserGroups","content":{
+				"username":entries[i].mail}
+			};
+			var optionalHeaders = {
+				"Content-Type": "application/json","Accept":"application/json"};
+				var dataJson = post(url, stringify(data) ,optionalHeaders);
+				if(dataJson!=null&&parse(dataJson.data)!=null){
+					var data = parse(dataJson.data);
+					if(data!=null&&data.getUserGroupsResponse!=null&&data.getUserGroupsResponse.getUserGroupsReturn!=null&&data.getUserGroupsResponse.getUserGroupsReturn.getUserGroupsReturn!=null){
+						var ent = data.getUserGroupsResponse.getUserGroupsReturn.getUserGroupsReturn;
+						for(var j=0;j<ent.length;++j){
+							if(ent[j].$==groupId){
+								resp.push(entries[i].mail);
+							}
+						}
+					}
+				}
+		}
+		catch(err){
+		}
+	}
+	users=entries;
+	%>

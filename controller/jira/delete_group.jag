@@ -1,0 +1,50 @@
+<%
+var baseAt="../..";
+
+include("../../includes/header.jag");
+include('../../controller/jira/controller.jag');
+include('../../controller/common.jag');
+var showpage=true;
+
+var groupname =request.getParameter("groupname");
+
+try{
+	
+	success=deleteGroup(groupname,"jira-users");
+
+}catch (e){
+	
+	showErrorDialog(e.title,e.details);
+	showpage=false;
+	
+}
+
+
+if(showpage){
+
+	if(success){
+	%>
+		<script type="text/javascript">
+			alert("Successfully deleted group '<%print(groupname);%>'");
+		</script>
+	<%
+	}else{
+	%>
+		<script type="text/javascript">
+			alert("Failed to delete the group '<%print(groupname);%>'. An internal error has occured.");
+		</script>
+	<%
+	}
+	%>
+	
+	<script type="text/javascript">
+	window.location.replace("../../pages/group_management/group_list.jag#tabs|Product:jira");
+	</script>
+
+<%
+}
+%>
+
+<%
+include("../../includes/footer.jag");
+%>

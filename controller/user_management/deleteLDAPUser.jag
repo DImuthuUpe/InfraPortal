@@ -1,0 +1,123 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+
+var config = require('../../config.json');
+var mail = request.getParameter("mail");
+var log = new Log("INFRA PORTAL");
+////////////////////////////////////////mailman//////////////////////////////////////////
+    var url  = config.services.mailman;
+    log.debug("REQUEST URL: "+url);
+    var data = {
+	"application": "mailman","operation": "getUserRecord","content":{
+	"user_idOremail":mail}
+    };	
+    log.debug("REQUEST DATA: "+data);
+    var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+    var ldapJson = post(url, stringify(data) ,optionalHeaders);
+    log.debug("RESPONSE DATA: "+ldapJson);
+    log.info("MAILMAN USER RECORD ACQUIRED: "+mail);
+    var resp = parse(ldapJson.data).text;
+    if(resp!="404 Not Found"){
+    	var url  = config.services.mailman; 
+    	log.debug("REQUEST URL: "+url);
+    	var data = {
+    		"application": "mailman","operation": "deleteUser","content":{
+    		"email":mail}
+    	};
+    	log.debug("REQUEST DATA: "+data);
+    	var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};    	
+    	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+    	log.debug("RESPONSE DATA: "+ldapJson);
+    	log.info("MAILMAN USER RECORD DELETED: "+mail);  
+    	print("Mailman user "+mail+" successfully deleted<br/>"); 	
+    	
+	}else{
+		
+		//print("User not found in Mailman: "+mail+"<br/>");
+		log.debug("USER NOT FOUND IN MAILMAN: "+mail+" : "+resp);
+		log.info("USER MANUALLY DELETED: "+mail);
+		
+	}
+	
+	
+	 	
+	    
+////////////////////////////////////////mailman//////////////////////////////////////////
+
+	
+////////////////////////////////////////docs//////////////////////////////////////////
+
+	
+////////////////////////////////////////docs//////////////////////////////////////////
+
+	
+////////////////////////////////////////svn//////////////////////////////////////////		
+		var url  = config.services.svn;
+		log.debug("SVN REQUEST URL: "+url);
+		    
+		 var data = {"application": "svn","operation": "removeUser","content":{"mail":mail}};
+		 log.debug("REQUEST DATA: "+data);
+		 var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};    	
+		 var ldapJson = post(url, stringify(data) ,optionalHeaders);
+		 log.debug("RESPONSE DATA: "+ldapJson);
+		 log.info("SVN USER RECORD DELETED: "+mail);  
+		 //print(ldapJson);
+		 if(ldapJson!=null&&ldapJson.data!=null&&JSON.parse(ldapJson.data).removeUserResponse!=null){
+		 	 print("SVN user "+mail+" successfully deleted<br/>");
+		 	 log.info("SVN user "+mail+" successfully deleted<br/>");
+		 }else{
+		 	 print("Problem in removing user "+mail+" <br/>");
+		 	 log.info("Problem in removing user "+mail+" <br/>");
+		 }
+
+////////////////////////////////////////svn//////////////////////////////////////////	
+	
+
+////////////////////////////////////////jira//////////////////////////////////////////
+	
+	
+////////////////////////////////////////jira//////////////////////////////////////////	
+	
+////////////////////////////////////////ldap//////////////////////////////////////////
+	        var url  = config.services.ldap;
+	        log.debug("REQUEST URL: "+url);
+	    	var data = {
+	    		"application": "ldap","operation": "searchEntity","content":{
+	    			"objectClass": "inetOrgPerson","dn":"ou=staff,dc=wso2,dc=com","attributes":"uid","filters":"mail="+mail}
+	    	};
+	    	log.debug("LDAP REQUEST DATA: "+stringify(data));
+	    	var optionalHeaders = {
+	    		"Content-Type": "application/json","Accept":"application/json"};
+	    	var ldapJson = post(url, stringify(data) ,optionalHeaders);
+	    	log.debug("LDAP RESPONSE DATA: "+stringify(ldapJson));
+	    	var entries = parse(ldapJson.data).result.entry;
+	    	var dn=(entries.dn);
+	    	//print(dn);
+	    	log.info("LDAP USER ENTITY ACQUIRED: "+mail+" DN: "+dn);
+	    	log.debug("REQUEST URL: "+url);
+	    	data = {
+	    		"application": "ldap","operation": "deleteEntity","content":{
+	    			"dn":dn}
+	    	};
+	    	log.debug("LDAP DELETE REQUEST DATA: "+stringify(data));
+	    	ldapJson = post(url, stringify(data) ,optionalHeaders);
+	    	log.debug("LDAP DELETE RESPONSE DATA: "+stringify(ldapJson));
+	    	entries = parse(ldapJson.data);
+	    	//print(ldapJson); 
+	    	var respData = JSON.parse(ldapJson.data);
+	    	if(respData!=null&&respData.result!=null&&respData.result.message!=null){
+	    		print("JIRA user "+mail+" successfully deleted<br/>");
+	    		log.info("JIRA user "+mail+" successfully deleted<br/>");
+	    		print("Docs user "+mail+" successfully deleted<br/>");
+	    		log.info("Docs user "+mail+" successfully deleted<br/>");
+	    		print("LDAP User "+mail + " successfully deleted");
+	    		log.info("LDAP User "+mail + " successfully deleted");
+	    	}else{
+	    		print("Error deleting user "+mail);
+	    		log.info("Error deleting user "+mail);
+	    	}
+	    	
+////////////////////////////////////////ldap//////////////////////////////////////////
+include('../../includes/footer.jag');
+%>

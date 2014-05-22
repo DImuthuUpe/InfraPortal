@@ -1,0 +1,105 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+var config = require('../../config.json');
+
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+		
+%>
+
+<div id="middle">
+
+	<h2>User List</h2>
+
+
+	<div id="workArea">
+		<table class="styledLeft" id="userListTable">
+			<thead>
+				<tr>
+					<th></th>
+					<th>Display Name</th>
+					<th>Given Name</th>
+					<th>Uid</th>
+					<th>Email</th>
+					<th></th>
+					<th></th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<%
+				// 				var ldapUser = Packages.com.dimuthuupeksha.infraportal.ldap.LDAPUser;
+				// 				var ldapConnector = Packages.com.dimuthuupeksha.infraportal.ldap.LDAPConnector;
+				// 				var connector = new ldapConnector();
+				// 				var userList = connector.getAllUsers();
+				// 				for(var i=0;i<userList.size();i++){
+				var url  = config.services.ldap;
+				var data = {"application": "ldap","operation": "searchEntity","content":{"objectClass": "inetOrgPerson","dn":"ou=staff,dc=wso2,dc=com","attributes":"uid,mail,givenName,displayName"}};
+				var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+				var ldapJson = post(url, stringify(data) ,optionalHeaders);
+				var entries = parse(ldapJson.data).result.entry;
+				//print(ldapJson);
+				for(var i=0;i<entries.length;i++){
+				%>
+				<tr>
+					<td><input type="checkbox" /></td>
+					<td><%print(entries[i].displayName);%></td>
+					<td><%print(entries[i].givenName);%></td>
+					<td><%print(entries[i].uid);%></td>
+					<td><%print(entries[i].mail);%></td>
+					<td><a href="delete_user.jag?mail=<%print(entries[i].mail);%>"><img
+							src="../../images/icons/bullet_cross.png" />Remove</a></td>
+					<td><a
+						href="edit_user.jag?mail=<%print(entries[i].mail);%>"><img
+							src="../../images/icons/bullet_edit.png" />Edit</a></td>
+					<td><a href="view_user.jag?mail=<%print(entries[i].mail);%>"><img
+							src="../../images/icons/cd_magnify.png" />View</a></td>
+				</tr>
+				<%
+
+				}
+
+				%>
+			</tbody>
+
+		</table>
+
+
+	</div>
+</div>
+<script type="text/javascript">
+
+jQuery.fn.dataTableExt.oSort['string-case-asc']  = function(x,y) {
+    return ((x < y) ? -1 : ((x > y) ?  1 : 0));
+};
+ 
+jQuery.fn.dataTableExt.oSort['string-case-desc'] = function(x,y) {
+    return ((x < y) ?  1 : ((x > y) ? -1 : 0));
+};
+
+$(document).ready(function() {
+	$('#userListTable').dataTable({
+		"bAutoWidth": false,
+		"sPaginationType": "full_numbers",
+		"bJQueryUI": true,
+		"aaSorting": [[ 4, "desc" ]]
+	});
+} );
+</script>
+<%
+	}
+}
+include('../../includes/footer.jag');
+%>

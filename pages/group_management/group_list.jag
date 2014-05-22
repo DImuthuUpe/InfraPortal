@@ -1,0 +1,156 @@
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+%>
+
+<div id="middle">
+
+	<h2>Group List</h2>
+
+	<div class="ionTabs" id="tabs_1" data-name="Product">
+		<ul class="ionTabs__head">
+			<li class="ionTabs__tab" data-target="jira">Jira group list</li>
+			<li class="ionTabs__tab" data-target="svn">Svn group list</li>
+			<li class="ionTabs__tab" data-target="docs">Docs group list</li>
+			<li class="ionTabs__tab" data-target="mail">Mail group list</li>
+		</ul>
+		<div class="ionTabs__body">
+			<div id="jiraContainer" class="ionTabs__item" data-name="jira">
+				<%
+			try{
+				include('../jira/jira_group.jag');
+			}catch (err){
+			}
+			%>
+
+			</div>
+			
+			<div id="svnContainer" class="ionTabs__item" data-name="svn">
+				<%
+			try{
+				include('../svn/svn_group.jag');
+			}catch (err){
+						}
+			%>
+			</div>
+			<div id="docsContainer" class="ionTabs__item" data-name="docs">
+				<%
+				
+			try{
+				include('../docs/docs_group.jag');
+			}catch (err){
+			}
+						%>
+			</div>
+			<div id="mailContainer" class="ionTabs__item" data-name="mail">
+
+			<%
+			try{
+				include('../mail/mailman_group.jag');
+			}catch (err){
+			}
+			%>
+
+			</div>
+			<div class="ionTabs__preloader"></div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+
+$.ionTabs("#tabs_1");
+function jiraGroupLoad(){
+$.ajax({
+	type: 'GET',
+	url: '../../pages/jira/jira_group.jag',
+	success:function(data){
+		alert("hooo");
+		$('#jiraContainer').append(data);
+		alert(data);
+		//if(isAllLoaded())
+		$.ionTabs("#tabs_1");
+		//$('#jiraContainer').append(data);
+	},
+	error:function(){
+		alert('AJAX Failure!');
+	}
+});
+}
+function svnGroupLoad(){
+$.ajax({
+	type: 'GET',
+	url: '../../pages/svn/svn_group.jag',
+	success:function(data){
+		
+		$('#svnContainer').append(data);
+		//if(isAllLoaded())
+		$.ionTabs("#tabs_1");
+		//$('#jiraContainer').append(data);
+	},
+	error:function(){
+		alert('AJAX Failure!');
+	}
+});
+}
+
+function docsGroupLoad(){
+$.ajax({
+	type: 'GET',
+	url: '../../pages/docs/docs_group.jag',
+	success:function(data){
+		
+		$('#docsContainer').append(data);
+		//if(isAllLoaded())
+		$.ionTabs("#tabs_1");
+		//$('#jiraContainer').append(data);
+	},
+	error:function(){
+		alert('AJAX Failure!');
+	}
+});
+}
+
+function mailGroupLoad(){
+$.ajax({
+	type: 'GET',
+	url: '../../pages/mail/mailman_group.jag',
+	success:function(data){
+		$('#mailContainer').append(data);
+		//if(isAllLoaded())
+		$.ionTabs("#tabs_1");
+		//$('#jiraContainer').append(data);
+	},
+	error:function(){
+		alert('AJAX Failure!');
+	}
+});
+}
+var counter =0;
+function isAllLoaded(){
+	counter++;
+	//alert(counter);
+	if(counter==4){
+		return true;
+	}else{
+		return false;
+	}
+}
+</script>
+<%
+	}
+}
+include('../../includes/footer.jag');
+%>

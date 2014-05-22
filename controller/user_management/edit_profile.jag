@@ -1,0 +1,26 @@
+<%
+var config = require('../../config.json');
+var mail = request.getParameter("mail");
+var password = request.getParameter("password");
+var givenName = request.getParameter("givenName");
+var displayName = request.getParameter("displayName");
+var mobile = request.getParameter("mobile");
+var pwEnable = request.getParameter("pwEnable");
+var dn = request.getParameter("dn");
+
+var url =config.services.ldap;
+var optionalHeaders = {"Content-Type": "application/json","Accept":"application/json"};
+var data = {
+				"application": "ldap","operation": "updateEntity","content":{
+				"mode":"replace",
+				"dn":dn,
+				"attributes":"mail:"+mail+";givenName:"+givenName+";displayName:"+displayName+";homePhone:"+mobile}
+			};
+			
+if(pwEnable=="on"){
+	data.content.attributes=data.content.attributes+";userPassword:"+password;
+}
+print(data);
+var ldapJson = post(url, stringify(data) ,optionalHeaders);	
+response.sendRedirect("../../pages/user_management/edit_profile.jag");
+%>

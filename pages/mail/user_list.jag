@@ -1,0 +1,253 @@
+
+<%
+var baseAt="../..";
+include('../../includes/header.jag');
+var config = require('../../config.json');
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+
+%>
+<div id="lightbox"></div>
+<div
+	id="lightbox-shadow" onclick="closeLightbox()"></div>
+<div id="middle">
+
+	<h2>Manage Mailman user list</h2>
+
+	
+	<%
+	var groupId = request.getParameter("groupId");
+    
+	var url  = config.services.mailman;
+			var data = {
+			"application": "mailman","operation": "getLists","content":{}
+			};
+			var optionalHeaders = {
+			"Content-Type": "application/json","Accept":"application/json"};
+			var mailmanJson = post(url, stringify(data) ,optionalHeaders);			 
+            var resp = parse(mailmanJson.data).entries;
+			//print(groupId);
+
+			%>
+	<div id="workArea">
+		<table>
+			<tr>
+				<td>Select Mailing List</td>
+				<td><select onchange="onGroupSelect(this)">
+						<option value="" >Select Mailing List</option>
+						<%if(resp instanceof Array){
+							for(var i=0;i<resp.length;i++){
+						%>
+						<option value="<%print(resp[i].fqdn_listname);%>"<%if(resp[i].fqdn_listname==groupId)print("selected='selected'");%>><%print(resp[i].fqdn_listname);%></option>
+						<%
+							}
+						}else{%>
+							<option value="<%print(resp.fqdn_listname);%>"<%if(resp[i].fqdn_listname==groupId)print("selected='selected'");%>><%print(resp.fqdn_listname);%></option>
+						<%}%>
+
+				</select>
+				</td>
+			</tr>
+
+		</table>
+
+		<br />
+
+		<p>User List</p>
+		<hr />
+		
+		<br /> <input type="button" value="Add/Remove User" onclick="lightbox('','../../pages/mail/add_user_mailman.jag?groupId=<%print(groupId);%>')"/>
+		<br/>
+		<table class="styledLeft" id="userListTable">
+			<thead>
+				<tr>
+				
+					<th>Email</th>
+
+				</tr>
+			</thead>
+			<tbody>
+				<%
+				
+				data = {
+					"application": "mailman","operation": "getListMembers","content":{"fqdn_listname":groupId}
+				};
+							  var mailmanJson2 = post(url, stringify(data) ,optionalHeaders);
+							  
+							
+							  var respUsr = parse(mailmanJson2.data).entries;
+				
+				if(respUsr!=null&&!respUsr["@nil"]){
+				if(respUsr instanceof Array){
+					for(var i=0;i<respUsr.length;i++){
+
+					
+				%>
+				<tr>
+					
+					<td><%print(respUsr[i].address.trim());%></td>
+				</tr>
+				<%
+					}
+				}else{
+					%>
+					<tr>
+					
+					<td> <%print(respUsr.address.trim());%></td>
+					</tr>
+					<%
+
+				}
+				}
+				%>
+				
+			</tbody>
+		</table>
+
+
+	</div>
+</div>
+
+<script type="text/javascript">
+
+function onGroupSelect(elem){
+	window.location.replace("../../pages/mail/user_list.jag?groupId="+elem.value);
+}
+				
+function lightbox(insertContent, ajaxContentUrl){
+
+	// add lightbox/shadow <div/>'s if not previously added
+	if($('#lightbox').size() == 0){
+		var theLightbox = $('<div id="lightbox"/>');
+		var theShadow = $('<div id="lightbox-shadow"/>');
+		$(theShadow).click(function(e){
+			closeLightbox();
+		});
+		$('body').append(theShadow);
+		$('body').append(theLightbox);
+	}
+
+	// remove any previously added content
+	$('#lightbox').empty();
+
+	// insert HTML content
+	if(insertContent != null){
+		$('#lightbox').append(insertContent);
+	}
+
+	// insert AJAX content
+	if(ajaxContentUrl != null){
+		// temporarily add a "Loading..." message in the lightbox
+		$('#lightbox').append('<p class="loading">Loading...</p>');
+
+		// request AJAX content
+		$.ajax({
+			type: 'GET',
+			url: ajaxContentUrl,
+			success:function(data){
+				// remove "Loading..." message and append AJAX content
+				$('#lightbox').empty();
+				$('#lightbox').append(data);
+			},
+			error:function(){
+				alert('AJAX Failure!');
+			}
+		});
+	}
+
+	// move the lightbox to the current window top + 100px
+	$('#lightbox').css('top', $(window).scrollTop() + 100 + 'px');
+
+	// display the lightbox
+	$('#lightbox').show();
+	$('#lightbox-shadow').show();
+
+}
+
+// close the lightbox
+function closeLightbox(){
+
+	// hide lightbox and shadow <div/>'s
+	$('#lightbox').hide();
+	$('#lightbox-shadow').hide();
+
+	// remove contents of lightbox in case a video or other content is actively playing
+	$('#lightbox').empty();
+}
+
+$(document).ready(function() {
+	$('#userListTable').dataTable({
+		"bAutoWidth": false,
+		"sPaginationType": "full_numbers",
+		"bJQueryUI": true,
+		"aaSorting": [[ 4, "desc" ]]
+	});
+} );
+</script>
+
+
+<%
+include('../../includes/header.jag');
+var config = require('../../config.json');
+var groupId = request.getParameter("groupId");
+include('../../controller/user_management/controller.jag');
+if(user!=null){
+	var roleList = getRoles(user.mail);
+	//print(roleList);
+	var access = false;
+	for(var i=0;i<roleList.length;i++){
+		if(roleList[i]=="Admin"){
+			access=true;
+			break;
+		}
+	}
+	if(access){
+
+
+
+%>
+
+<div id="middle">
+
+	<h2>Do you want to Mailing List <%print(groupId);%>?</h2>
+
+	<div id="workArea">
+	<table>
+		<tr>
+			<td><input type="button" value="Yes" style="width: 80px" onclick="deleteUser()"></td>
+			<td><input type="button" value="No" style="width: 80px" ></td>
+		</tr>
+	</table>
+		
+	</div>
+</div>
+
+<script type="text/javascript">
+	function deleteUser(){
+		window.location.replace("../../controller/mail/delete_Group.jag?groupId=<%print(groupId);%>");
+	}
+</script>
+
+<%
+
+	}else {
+		showPermissionDenied();
+	}
+
+}
+%>
+
+
+<%
+include('../../includes/footer.jag');
+%>
